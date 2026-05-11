@@ -1,0 +1,184 @@
+### Banking Transactions API — Sample Requests
+### Compatible with VS Code REST Client and JetBrains HTTP Client
+
+@baseUrl = http://localhost:3000
+
+# ============================================================
+# GET /  — Health check
+# ============================================================
+
+GET {{baseUrl}}/
+Accept: application/json
+
+###
+
+# ============================================================
+# POST /transactions — Create a deposit
+# ============================================================
+
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-SRC01",
+  "toAccount": "ACC-DST01",
+  "amount": 1000.00,
+  "currency": "USD",
+  "type": "deposit"
+}
+
+###
+
+# POST /transactions — Create a withdrawal
+
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-DST01",
+  "toAccount": "ACC-SRC01",
+  "amount": 250.50,
+  "currency": "USD",
+  "type": "withdrawal"
+}
+
+###
+
+# POST /transactions — Create a transfer
+
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-A1B2C",
+  "toAccount": "ACC-DST01",
+  "amount": 500.00,
+  "currency": "EUR",
+  "type": "transfer"
+}
+
+###
+
+# POST /transactions — Validation error: invalid account format
+
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "INVALID",
+  "toAccount": "ACC-00001",
+  "amount": 100.00,
+  "currency": "USD",
+  "type": "deposit"
+}
+
+###
+
+# POST /transactions — Validation error: negative amount
+
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-SRC01",
+  "toAccount": "ACC-DST01",
+  "amount": -50.00,
+  "currency": "USD",
+  "type": "deposit"
+}
+
+###
+
+# POST /transactions — Validation error: unsupported currency
+
+POST {{baseUrl}}/transactions
+Content-Type: application/json
+
+{
+  "fromAccount": "ACC-SRC01",
+  "toAccount": "ACC-DST01",
+  "amount": 100.00,
+  "currency": "XYZ",
+  "type": "deposit"
+}
+
+###
+
+# ============================================================
+# GET /transactions — List all transactions
+# ============================================================
+
+GET {{baseUrl}}/transactions
+Accept: application/json
+
+###
+
+# GET /transactions — Filter by accountId
+
+GET {{baseUrl}}/transactions?accountId=ACC-DST01
+Accept: application/json
+
+###
+
+# GET /transactions — Filter by type
+
+GET {{baseUrl}}/transactions?type=deposit
+Accept: application/json
+
+###
+
+# GET /transactions — Filter by date range
+
+GET {{baseUrl}}/transactions?from=2026-01-01&to=2026-12-31
+Accept: application/json
+
+###
+
+# GET /transactions — Filter by accountId + type
+
+GET {{baseUrl}}/transactions?accountId=ACC-DST01&type=deposit
+Accept: application/json
+
+###
+
+# ============================================================
+# GET /transactions/{id} — Get by ID
+# ============================================================
+
+# Replace {id} with an actual UUID returned from POST /transactions
+GET {{baseUrl}}/transactions/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+###
+
+# ============================================================
+# GET /accounts/{id}/balance
+# ============================================================
+
+GET {{baseUrl}}/accounts/ACC-DST01/balance
+Accept: application/json
+
+###
+
+# GET /accounts/{id}/balance — Account not found (404)
+
+GET {{baseUrl}}/accounts/ACC-XXXXX/balance
+Accept: application/json
+
+###
+
+# ============================================================
+# GET /accounts/{id}/summary
+# ============================================================
+
+GET {{baseUrl}}/accounts/ACC-DST01/summary
+Accept: application/json
+
+###
+
+# GET /accounts/{id}/summary — Account not found (404)
+
+GET {{baseUrl}}/accounts/ACC-XXXXX/summary
+Accept: application/json
+
+###

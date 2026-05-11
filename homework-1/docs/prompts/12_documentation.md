@@ -1,8 +1,5 @@
 Always use 1_project_architecture.md file as main project documentation
 
-Ось список реалізованих ендпоінтів і фіч:
-[ОПИСАТИ ЩО РЕАЛІЗОВАНО]
-
 Онови README.md файл та вкажи наступну інформацію:
 
 1. Короткий опис проєкту (2-3 речення)
