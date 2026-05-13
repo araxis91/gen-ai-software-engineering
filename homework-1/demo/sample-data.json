@@ -1,0 +1,100 @@
+{
+  "description": "Sample transaction payloads for manual testing via curl or REST Client",
+  "accounts": [
+    "ACC-SRC01",
+    "ACC-DST01",
+    "ACC-A1B2C",
+    "ACC-00001"
+  ],
+  "transactions": [
+    {
+      "_comment": "Deposit into ACC-DST01",
+      "fromAccount": "ACC-SRC01",
+      "toAccount": "ACC-DST01",
+      "amount": 1000.00,
+      "currency": "USD",
+      "type": "deposit"
+    },
+    {
+      "_comment": "Withdrawal from ACC-DST01",
+      "fromAccount": "ACC-DST01",
+      "toAccount": "ACC-SRC01",
+      "amount": 250.50,
+      "currency": "USD",
+      "type": "withdrawal"
+    },
+    {
+      "_comment": "Transfer between accounts in EUR",
+      "fromAccount": "ACC-A1B2C",
+      "toAccount": "ACC-DST01",
+      "amount": 500.00,
+      "currency": "EUR",
+      "type": "transfer"
+    },
+    {
+      "_comment": "Small deposit in UAH",
+      "fromAccount": "ACC-00001",
+      "toAccount": "ACC-SRC01",
+      "amount": 99.99,
+      "currency": "UAH",
+      "type": "deposit"
+    },
+    {
+      "_comment": "Large transfer in GBP",
+      "fromAccount": "ACC-SRC01",
+      "toAccount": "ACC-00001",
+      "amount": 7500.00,
+      "currency": "GBP",
+      "type": "transfer"
+    }
+  ],
+  "invalid_examples": [
+    {
+      "_comment": "Invalid account format — missing ACC- prefix",
+      "fromAccount": "INVALID",
+      "toAccount": "ACC-00001",
+      "amount": 100.00,
+      "currency": "USD",
+      "type": "deposit"
+    },
+    {
+      "_comment": "Negative amount",
+      "fromAccount": "ACC-SRC01",
+      "toAccount": "ACC-DST01",
+      "amount": -50.00,
+      "currency": "USD",
+      "type": "deposit"
+    },
+    {
+      "_comment": "Amount with 3 decimal places",
+      "fromAccount": "ACC-SRC01",
+      "toAccount": "ACC-DST01",
+      "amount": 10.999,
+      "currency": "USD",
+      "type": "deposit"
+    },
+    {
+      "_comment": "Unsupported currency code",
+      "fromAccount": "ACC-SRC01",
+      "toAccount": "ACC-DST01",
+      "amount": 100.00,
+      "currency": "XYZ",
+      "type": "deposit"
+    },
+    {
+      "_comment": "Transfer to same account",
+      "fromAccount": "ACC-SRC01",
+      "toAccount": "ACC-SRC01",
+      "amount": 100.00,
+      "currency": "USD",
+      "type": "transfer"
+    },
+    {
+      "_comment": "Missing required field: toAccount",
+      "fromAccount": "ACC-SRC01",
+      "amount": 100.00,
+      "currency": "USD",
+      "type": "deposit"
+    }
+  ]
+}

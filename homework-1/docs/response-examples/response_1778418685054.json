@@ -1,0 +1,52 @@
+[
+  {
+    "fromAccount": "ACC-A1B2C",
+    "toAccount": "ACC-00001",
+    "amount": 250.5,
+    "currency": "USD",
+    "type": "transfer",
+    "id": "06f00e63-2385-4d4a-a59f-7fc5ae83be9b",
+    "timestamp": "2026-05-10T12:53:08.963081Z",
+    "status": "pending"
+  },
+  {
+    "fromAccount": "ACC-12345",
+    "toAccount": "ACC-67890",
+    "amount": 100.5,
+    "currency": "USD",
+    "type": "transfer",
+    "id": "246e255d-0a39-40d5-8a17-9a3a3be6cecb",
+    "timestamp": "2026-05-10T12:58:02.817371Z",
+    "status": "pending"
+  },
+  {
+    "fromAccount": "ACC-12346",
+    "toAccount": "ACC-67890",
+    "amount": 1000.5,
+    "currency": "USD",
+    "type": "transfer",
+    "id": "3b2373a4-7c2b-4252-aa93-cd49f3897b8e",
+    "timestamp": "2026-05-10T13:01:28.436046Z",
+    "status": "pending"
+  },
+  {
+    "fromAccount": "ACC-12346",
+    "toAccount": "ACC-67890",
+    "amount": 0.5,
+    "currency": "USD",
+    "type": "transfer",
+    "id": "f81c922c-c152-41cf-94a9-32e509eb8066",
+    "timestamp": "2026-05-10T13:01:40.383175Z",
+    "status": "pending"
+  },
+  {
+    "fromAccount": "ACC-34344",
+    "toAccount": "ACC-67890",
+    "amount": 20323230.5,
+    "currency": "USD",
+    "type": "transfer",
+    "id": "a94b3033-0a5b-4232-b509-d89a73bfc531",
+    "timestamp": "2026-05-10T13:01:58.429576Z",
+    "status": "pending"
+  }
+]

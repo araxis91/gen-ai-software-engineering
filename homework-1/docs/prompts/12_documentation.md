@@ -1,0 +1,11 @@
+Always use 1_project_architecture.md file as main project documentation
+
+Онови README.md файл та вкажи наступну інформацію:
+
+1. Короткий опис проєкту (2-3 речення)
+2. Список реалізованих ендпоінтів у вигляді таблиці
+3. Приклади запитів і відповідей для кожного ендпоінту (curl)
+4. Розділ "Architecture decisions" — чому FastAPI, чому Pydantic, чому in-memory
+5. Розділ "AI Assistance" — короткий опис як використовувався AI
+
+Стиль: технічний, лаконічний, з emoji для заголовків.
