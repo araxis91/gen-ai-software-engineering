@@ -21,7 +21,7 @@ Status: ✅
    - `ticketing.error`
 4. Add `application.yml` profiles (`default`, `test`) and database setup (H2 for development/tests).
 ### 2) Define domain model and validation rules
-Status: ⬜
+Status: ✅
 1. Implement `Ticket` entity/model with fields required by `TASKS.md` and enum types:
    - `Category`, `Priority`, `Status`, `Source`, `DeviceType`.
 2. Represent metadata as embeddable object (e.g., `TicketMetadata`) or JSON column depending on DB choice.
@@ -33,7 +33,7 @@ Status: ⬜
 4. Add DTOs for API input/output to separate persistence entity from request schema.
 5. Add mapper layer (manual mapper or MapStruct) between DTOs and entities.
 ### 3) Implement persistence and query/filtering foundation
-Status: ⬜
+Status: ✅
 1. Create `TicketRepository` extending `JpaRepository<Ticket, UUID>`.
 2. Add filtering support for category, priority, status, customer id/email, and date ranges using Spring Data Specifications or custom query methods.
 3. Add indexes for high-frequency filter fields (`category`, `priority`, `status`, `createdAt`) to support later performance tests.
