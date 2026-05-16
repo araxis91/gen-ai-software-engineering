@@ -90,7 +90,7 @@ Status: ✅
 3. Map all known failures to correct HTTP codes (`400`, `404`, `415`, `500` as needed).
 4. Add request/response examples in test fixtures to lock contract behavior.
 ### 8) Implement required automated tests (>85% coverage)
-Status: ⬜
+Status: ✅
 1. Configure JaCoCo report generation and fail build when coverage <85%.
 2. Create test suites corresponding to assignment intent:
    - API endpoint tests (`TicketApiTest`)
