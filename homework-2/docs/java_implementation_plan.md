@@ -38,7 +38,7 @@ Status: ✅
 2. Add filtering support for category, priority, status, customer id/email, and date ranges using Spring Data Specifications or custom query methods.
 3. Add indexes for high-frequency filter fields (`category`, `priority`, `status`, `createdAt`) to support later performance tests.
 ### 4) Build core ticket CRUD API
-Status: ⬜
+Status: ✅
 1. Implement endpoints:
    - `POST /tickets`
    - `GET /tickets`
@@ -54,7 +54,7 @@ Status: ⬜
    - `400` for validation errors.
 4. Set `createdAt` and `updatedAt` automatically; set `resolvedAt` only when status transitions to resolved/closed.
 ### 5) Implement bulk import pipeline (CSV/JSON/XML)
-Status: ⬜
+Status: ✅
 1. Define a common importer contract (e.g., `TicketImportParser`) with implementations:
    - `CsvTicketImportParser`
    - `JsonTicketImportParser`
