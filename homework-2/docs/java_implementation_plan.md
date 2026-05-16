@@ -105,7 +105,7 @@ Status: ✅
 4. Add negative tests for malformed files, invalid enums, missing required fields, invalid email, and overly long text.
 5. Verify error code + message content for all major failure paths.
 ### 9) Implement integration and performance scenarios
-Status: ⬜
+Status: ✅
 1. Add end-to-end test for full lifecycle: create → auto-classify → update → resolve/close → fetch → delete.
 2. Add import + auto-classification verification test.
 3. Add concurrent test for 20+ simultaneous requests (e.g., `ExecutorService` + REST-assured/TestRestTemplate).
