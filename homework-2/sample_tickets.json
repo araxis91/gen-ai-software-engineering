@@ -1,0 +1,444 @@
+{
+  "tickets": [
+    {
+      "customer_id": "customer-0101",
+      "customer_email": "customer0101@example.com",
+      "customer_name": "Customer 0101",
+      "subject": "Reproducible defect report 101",
+      "description": "Bug report with steps to reproduce the defect. Critical workflow fails after update and errors are visible.",
+      "category": "bug_report",
+      "priority": "urgent",
+      "status": "new",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "bug",
+        "urgent",
+        "batch0"
+      ],
+      "metadata": {
+        "source": "web_form",
+        "browser": "Chrome",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0102",
+      "customer_email": "customer0102@example.com",
+      "customer_name": "Customer 0102",
+      "subject": "General support inquiry 102",
+      "description": "General support question requiring guidance. No clear category keyword is dominant but customer needs assistance.",
+      "category": "other",
+      "priority": "high",
+      "status": "in_progress",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "other",
+        "high",
+        "batch1"
+      ],
+      "metadata": {
+        "source": "email",
+        "browser": "Firefox",
+        "device_type": "tablet"
+      }
+    },
+    {
+      "customer_id": "customer-0103",
+      "customer_email": "customer0103@example.com",
+      "customer_name": "Customer 0103",
+      "subject": "Cannot access account 103",
+      "description": "Cannot access account after 2FA reset; this is critical because production users are blocked from login.",
+      "category": "account_access",
+      "priority": "medium",
+      "status": "waiting_customer",
+      "resolved_at": null,
+      "assigned_to": "agent-7",
+      "tags": [
+        "account",
+        "medium",
+        "batch2"
+      ],
+      "metadata": {
+        "source": "api",
+        "browser": "Safari",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "customer-0104",
+      "customer_email": "customer0104@example.com",
+      "customer_name": "Customer 0104",
+      "subject": "Application crash 104",
+      "description": "Application shows error and crashes with exception traces; this issue is blocking normal usage and needs asap triage.",
+      "category": "technical_issue",
+      "priority": "low",
+      "status": "resolved",
+      "resolved_at": "2026-01-05T17:00:00",
+      "assigned_to": null,
+      "tags": [
+        "technical",
+        "low",
+        "batch3"
+      ],
+      "metadata": {
+        "source": "chat",
+        "browser": "Edge",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0105",
+      "customer_email": "customer0105@example.com",
+      "customer_name": "Customer 0105",
+      "subject": "Refund request invoice 105",
+      "description": "Need help with billing charge and invoice mismatch. Requesting payment refund details and receipt correction.",
+      "category": "billing_question",
+      "priority": "urgent",
+      "status": "closed",
+      "resolved_at": "2026-01-05T18:00:00",
+      "assigned_to": null,
+      "tags": [
+        "billing",
+        "urgent",
+        "batch4"
+      ],
+      "metadata": {
+        "source": "phone",
+        "browser": "Opera",
+        "device_type": "tablet"
+      }
+    },
+    {
+      "customer_id": "customer-0106",
+      "customer_email": "customer0106@example.com",
+      "customer_name": "Customer 0106",
+      "subject": "Feature enhancement request 106",
+      "description": "Feature request for dashboard improvement. This is a minor suggestion to add export and better filtering options.",
+      "category": "feature_request",
+      "priority": "high",
+      "status": "new",
+      "resolved_at": null,
+      "assigned_to": "agent-2",
+      "tags": [
+        "feature",
+        "high",
+        "batch0"
+      ],
+      "metadata": {
+        "source": "web_form",
+        "browser": "Chrome",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "customer-0107",
+      "customer_email": "customer0107@example.com",
+      "customer_name": "Customer 0107",
+      "subject": "Reproducible defect report 107",
+      "description": "Bug report with steps to reproduce the defect. Critical workflow fails after update and errors are visible.",
+      "category": "bug_report",
+      "priority": "medium",
+      "status": "in_progress",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "bug",
+        "medium",
+        "batch1"
+      ],
+      "metadata": {
+        "source": "email",
+        "browser": "Firefox",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0108",
+      "customer_email": "customer0108@example.com",
+      "customer_name": "Customer 0108",
+      "subject": "General support inquiry 108",
+      "description": "General support question requiring guidance. No clear category keyword is dominant but customer needs assistance.",
+      "category": "other",
+      "priority": "low",
+      "status": "waiting_customer",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "other",
+        "low",
+        "batch2"
+      ],
+      "metadata": {
+        "source": "api",
+        "browser": "Safari",
+        "device_type": "tablet"
+      }
+    },
+    {
+      "customer_id": "customer-0109",
+      "customer_email": "customer0109@example.com",
+      "customer_name": "Customer 0109",
+      "subject": "Cannot access account 109",
+      "description": "Cannot access account after 2FA reset; this is critical because production users are blocked from login.",
+      "category": "account_access",
+      "priority": "urgent",
+      "status": "resolved",
+      "resolved_at": "2026-01-05T22:00:00",
+      "assigned_to": "agent-5",
+      "tags": [
+        "account",
+        "urgent",
+        "batch3"
+      ],
+      "metadata": {
+        "source": "chat",
+        "browser": "Edge",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "customer-0110",
+      "customer_email": "customer0110@example.com",
+      "customer_name": "Customer 0110",
+      "subject": "Application crash 110",
+      "description": "Application shows error and crashes with exception traces; this issue is blocking normal usage and needs asap triage.",
+      "category": "technical_issue",
+      "priority": "high",
+      "status": "closed",
+      "resolved_at": "2026-01-05T23:00:00",
+      "assigned_to": null,
+      "tags": [
+        "technical",
+        "high",
+        "batch4"
+      ],
+      "metadata": {
+        "source": "phone",
+        "browser": "Opera",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0111",
+      "customer_email": "customer0111@example.com",
+      "customer_name": "Customer 0111",
+      "subject": "Refund request invoice 111",
+      "description": "Need help with billing charge and invoice mismatch. Requesting payment refund details and receipt correction.",
+      "category": "billing_question",
+      "priority": "medium",
+      "status": "new",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "billing",
+        "medium",
+        "batch0"
+      ],
+      "metadata": {
+        "source": "web_form",
+        "browser": "Chrome",
+        "device_type": "tablet"
+      }
+    },
+    {
+      "customer_id": "customer-0112",
+      "customer_email": "customer0112@example.com",
+      "customer_name": "Customer 0112",
+      "subject": "Feature enhancement request 112",
+      "description": "Feature request for dashboard improvement. This is a minor suggestion to add export and better filtering options.",
+      "category": "feature_request",
+      "priority": "low",
+      "status": "in_progress",
+      "resolved_at": null,
+      "assigned_to": "agent-8",
+      "tags": [
+        "feature",
+        "low",
+        "batch1"
+      ],
+      "metadata": {
+        "source": "email",
+        "browser": "Firefox",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "customer-0113",
+      "customer_email": "customer0113@example.com",
+      "customer_name": "Customer 0113",
+      "subject": "Reproducible defect report 113",
+      "description": "Bug report with steps to reproduce the defect. Critical workflow fails after update and errors are visible.",
+      "category": "bug_report",
+      "priority": "urgent",
+      "status": "waiting_customer",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "bug",
+        "urgent",
+        "batch2"
+      ],
+      "metadata": {
+        "source": "api",
+        "browser": "Safari",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0114",
+      "customer_email": "customer0114@example.com",
+      "customer_name": "Customer 0114",
+      "subject": "General support inquiry 114",
+      "description": "General support question requiring guidance. No clear category keyword is dominant but customer needs assistance.",
+      "category": "other",
+      "priority": "high",
+      "status": "resolved",
+      "resolved_at": "2026-01-06T03:00:00",
+      "assigned_to": null,
+      "tags": [
+        "other",
+        "high",
+        "batch3"
+      ],
+      "metadata": {
+        "source": "chat",
+        "browser": "Edge",
+        "device_type": "tablet"
+      }
+    },
+    {
+      "customer_id": "customer-0115",
+      "customer_email": "customer0115@example.com",
+      "customer_name": "Customer 0115",
+      "subject": "Cannot access account 115",
+      "description": "Cannot access account after 2FA reset; this is critical because production users are blocked from login.",
+      "category": "account_access",
+      "priority": "medium",
+      "status": "closed",
+      "resolved_at": "2026-01-06T04:00:00",
+      "assigned_to": "agent-3",
+      "tags": [
+        "account",
+        "medium",
+        "batch4"
+      ],
+      "metadata": {
+        "source": "phone",
+        "browser": "Opera",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "customer-0116",
+      "customer_email": "customer0116@example.com",
+      "customer_name": "Customer 0116",
+      "subject": "Application crash 116",
+      "description": "Application shows error and crashes with exception traces; this issue is blocking normal usage and needs asap triage.",
+      "category": "technical_issue",
+      "priority": "low",
+      "status": "new",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "technical",
+        "low",
+        "batch0"
+      ],
+      "metadata": {
+        "source": "web_form",
+        "browser": "Chrome",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0117",
+      "customer_email": "customer0117@example.com",
+      "customer_name": "Customer 0117",
+      "subject": "Refund request invoice 117",
+      "description": "Need help with billing charge and invoice mismatch. Requesting payment refund details and receipt correction.",
+      "category": "billing_question",
+      "priority": "urgent",
+      "status": "in_progress",
+      "resolved_at": null,
+      "assigned_to": null,
+      "tags": [
+        "billing",
+        "urgent",
+        "batch1"
+      ],
+      "metadata": {
+        "source": "email",
+        "browser": "Firefox",
+        "device_type": "tablet"
+      }
+    },
+    {
+      "customer_id": "customer-0118",
+      "customer_email": "customer0118@example.com",
+      "customer_name": "Customer 0118",
+      "subject": "Feature enhancement request 118",
+      "description": "Feature request for dashboard improvement. This is a minor suggestion to add export and better filtering options.",
+      "category": "feature_request",
+      "priority": "high",
+      "status": "waiting_customer",
+      "resolved_at": null,
+      "assigned_to": "agent-6",
+      "tags": [
+        "feature",
+        "high",
+        "batch2"
+      ],
+      "metadata": {
+        "source": "api",
+        "browser": "Safari",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "customer-0119",
+      "customer_email": "customer0119@example.com",
+      "customer_name": "Customer 0119",
+      "subject": "Reproducible defect report 119",
+      "description": "Bug report with steps to reproduce the defect. Critical workflow fails after update and errors are visible.",
+      "category": "bug_report",
+      "priority": "medium",
+      "status": "resolved",
+      "resolved_at": "2026-01-06T08:00:00",
+      "assigned_to": null,
+      "tags": [
+        "bug",
+        "medium",
+        "batch3"
+      ],
+      "metadata": {
+        "source": "chat",
+        "browser": "Edge",
+        "device_type": "mobile"
+      }
+    },
+    {
+      "customer_id": "customer-0120",
+      "customer_email": "customer0120@example.com",
+      "customer_name": "Customer 0120",
+      "subject": "General support inquiry 120",
+      "description": "General support question requiring guidance. No clear category keyword is dominant but customer needs assistance.",
+      "category": "other",
+      "priority": "low",
+      "status": "closed",
+      "resolved_at": "2026-01-06T09:00:00",
+      "assigned_to": null,
+      "tags": [
+        "other",
+        "low",
+        "batch4"
+      ],
+      "metadata": {
+        "source": "phone",
+        "browser": "Opera",
+        "device_type": "tablet"
+      }
+    }
+  ]
+}

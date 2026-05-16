@@ -3,6 +3,8 @@ package com.homework2.support.importer;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,5 +60,25 @@ class XmlImportParserTest {
         assertThatThrownBy(() -> parser.parse(malformedXml.getBytes(StandardCharsets.UTF_8)))
                 .isInstanceOf(MalformedImportFileException.class)
                 .hasMessageContaining("Malformed XML file");
+    }
+
+    @Test
+    void parseSampleXmlFileReturnsExpectedRecords() throws Exception {
+        byte[] xml = Files.readAllBytes(Path.of("sample_tickets.xml"));
+
+        List<ImportRecord> records = parser.parse(xml);
+
+        assertThat(records).hasSize(30);
+        assertThat(records).allMatch(record -> !record.hasParseError());
+    }
+
+    @Test
+    void parseInvalidXmlFileContainsParseErrors() throws Exception {
+        byte[] xml = Files.readAllBytes(Path.of("invalid_tickets.xml"));
+
+        List<ImportRecord> records = parser.parse(xml);
+
+        assertThat(records).hasSize(2);
+        assertThat(records).anyMatch(ImportRecord::hasParseError);
     }
 }

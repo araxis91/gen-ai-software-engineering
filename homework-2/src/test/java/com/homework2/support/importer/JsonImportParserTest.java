@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,5 +89,25 @@ class JsonImportParserTest {
         assertThatThrownBy(() -> parser.parse(malformedJson.getBytes(StandardCharsets.UTF_8)))
                 .isInstanceOf(MalformedImportFileException.class)
                 .hasMessageContaining("Malformed JSON file");
+    }
+
+    @Test
+    void parseSampleJsonFileReturnsExpectedRecords() throws Exception {
+        byte[] json = Files.readAllBytes(Path.of("sample_tickets.json"));
+
+        List<ImportRecord> records = parser.parse(json);
+
+        assertThat(records).hasSize(20);
+        assertThat(records).allMatch(record -> !record.hasParseError());
+    }
+
+    @Test
+    void parseInvalidJsonFileContainsParseErrors() throws Exception {
+        byte[] json = Files.readAllBytes(Path.of("invalid_tickets.json"));
+
+        List<ImportRecord> records = parser.parse(json);
+
+        assertThat(records).hasSize(2);
+        assertThat(records).anyMatch(ImportRecord::hasParseError);
     }
 }

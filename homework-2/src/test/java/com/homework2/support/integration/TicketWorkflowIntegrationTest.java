@@ -15,8 +15,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -100,29 +100,26 @@ class TicketWorkflowIntegrationTest {
 
     @Test
     void importThenAutoClassifyWorkflow() throws Exception {
-        String csv = """
-                customer_id,customer_email,customer_name,subject,description,category,priority,status,resolved_at,assigned_to,tags,source,browser,device_type
-                import-001,import-001@example.com,Import User,Cannot access account,Cannot access account in production down security incident and password flow is broken,other,low,new,,,login|password,web_form,Chrome,desktop
-                """;
+        byte[] csv = Files.readAllBytes(Path.of("sample_tickets.csv"));
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
-                "workflow.csv",
+                "sample_tickets.csv",
                 "text/csv",
-                csv.getBytes(StandardCharsets.UTF_8)
+                csv
         );
 
         mockMvc.perform(multipart("/tickets/import").file(file))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total_records").value(1))
-                .andExpect(jsonPath("$.successful").value(1))
+                .andExpect(jsonPath("$.total_records").value(50))
+                .andExpect(jsonPath("$.successful").value(50))
                 .andExpect(jsonPath("$.failed").value(0));
 
         MvcResult listResult = mockMvc.perform(get("/tickets")
-                        .param("customerId", "import-001"))
+                        .param("customerId", "customer-0001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].category").value("other"))
+                .andExpect(jsonPath("$.content[0].category").value("account_access"))
                 .andReturn();
 
         JsonNode listBody = objectMapper.readTree(listResult.getResponse().getContentAsString());

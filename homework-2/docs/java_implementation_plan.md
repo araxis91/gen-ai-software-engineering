@@ -112,7 +112,7 @@ Status: ✅
 4. Add combined filtering tests for category + priority.
 5. Define performance assertions (e.g., response time thresholds) suitable for local CI stability.
 ### 10) Prepare sample data deliverables
-Status: ⬜
+Status: ✅
 1. Generate and commit sample files:
    - `sample_tickets.csv` (50)
    - `sample_tickets.json` (20)

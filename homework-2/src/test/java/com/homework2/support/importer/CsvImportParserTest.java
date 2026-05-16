@@ -3,6 +3,8 @@ package com.homework2.support.importer;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,5 +63,25 @@ class CsvImportParserTest {
         ImportRecord record = records.getFirst();
         assertThat(record.hasParseError()).isTrue();
         assertThat(record.parseError()).contains("Invalid resolved_at datetime format");
+    }
+
+    @Test
+    void parseSampleCsvFileReturnsExpectedRecords() throws Exception {
+        byte[] csv = Files.readAllBytes(Path.of("sample_tickets.csv"));
+
+        List<ImportRecord> records = parser.parse(csv);
+
+        assertThat(records).hasSize(50);
+        assertThat(records).allMatch(record -> !record.hasParseError());
+    }
+
+    @Test
+    void parseInvalidCsvFileContainsParseErrors() throws Exception {
+        byte[] csv = Files.readAllBytes(Path.of("invalid_tickets.csv"));
+
+        List<ImportRecord> records = parser.parse(csv);
+
+        assertThat(records).hasSize(3);
+        assertThat(records).anyMatch(ImportRecord::hasParseError);
     }
 }

@@ -17,8 +17,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 
@@ -167,25 +167,40 @@ class TicketApiTest {
 
     @Test
     void importCsvEndpointReturnsSummary() throws Exception {
-        String csv = """
-                customer_id,customer_email,customer_name,subject,description,category,priority,status,resolved_at,assigned_to,tags,source,browser,device_type
-                cust-1,good@example.com,Good User,Login issue,Cannot access account because password reset fails,account_access,high,new,,,login|password,web_form,Chrome,desktop
-                cust-2,bad-email,Bad User,Billing issue,Need billing refund now,billing_question,medium,new,,,billing,web_form,Safari,mobile
-                """;
+        byte[] csv = Files.readAllBytes(Path.of("sample_tickets.csv"));
 
         MockMultipartFile file = new MockMultipartFile(
                 "file",
-                "tickets.csv",
+                "sample_tickets.csv",
                 "text/csv",
-                csv.getBytes(StandardCharsets.UTF_8)
+                csv
         );
 
         mockMvc.perform(multipart("/tickets/import").file(file))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total_records").value(2))
-                .andExpect(jsonPath("$.successful").value(1))
-                .andExpect(jsonPath("$.failed").value(1))
-                .andExpect(jsonPath("$.errors.length()").value(1));
+                .andExpect(jsonPath("$.total_records").value(50))
+                .andExpect(jsonPath("$.successful").value(50))
+                .andExpect(jsonPath("$.failed").value(0))
+                .andExpect(jsonPath("$.errors.length()").value(0));
+    }
+
+    @Test
+    void importInvalidCsvEndpointReturnsFailures() throws Exception {
+        byte[] invalidCsv = Files.readAllBytes(Path.of("invalid_tickets.csv"));
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "invalid_tickets.csv",
+                "text/csv",
+                invalidCsv
+        );
+
+        mockMvc.perform(multipart("/tickets/import").file(file))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total_records").value(3))
+                .andExpect(jsonPath("$.successful").value(0))
+                .andExpect(jsonPath("$.failed").value(3))
+                .andExpect(jsonPath("$.errors.length()").value(3));
     }
 
     @Test
