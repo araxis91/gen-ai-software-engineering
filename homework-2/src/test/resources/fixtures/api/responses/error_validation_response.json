@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-05-16T12:05:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Validation failed.",
+  "path": "/tickets",
+  "details": [
+    {
+      "field": "customerEmail",
+      "message": "must be a well-formed email address"
+    },
+    {
+      "field": "description",
+      "message": "size must be between 10 and 2000"
+    }
+  ]
+}

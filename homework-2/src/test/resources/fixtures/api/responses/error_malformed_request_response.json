@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-05-16T12:07:00Z",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Malformed request body.",
+  "path": "/tickets",
+  "details": [
+    {
+      "field": "body",
+      "message": "Unexpected character ('}' (code 125))"
+    }
+  ]
+}

@@ -84,7 +84,7 @@ Status: ✅
 7. Allow manual override via update endpoint while preserving audit trail.
 8. Log every classification decision (ticket id, input snippet/hash, matched rules, output).
 ### 7) Standardize error handling and API contracts
-Status: ⬜
+Status: ✅
 1. Implement global exception handler (`@RestControllerAdvice`) for validation, parse, and not-found errors.
 2. Define consistent error JSON shape (`timestamp`, `status`, `error`, `message`, `path`, optional `details`).
 3. Map all known failures to correct HTTP codes (`400`, `404`, `415`, `500` as needed).
