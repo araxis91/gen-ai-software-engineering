@@ -2,6 +2,9 @@ package com.homework2.support.service;
 
 import com.homework2.support.api.dto.TicketRequest;
 import com.homework2.support.api.dto.TicketResponse;
+import com.homework2.support.classification.TicketClassificationService;
+import com.homework2.support.domain.Category;
+import com.homework2.support.domain.Priority;
 import com.homework2.support.domain.Ticket;
 import com.homework2.support.domain.TicketStatus;
 import com.homework2.support.repository.TicketRepository;
@@ -21,17 +24,31 @@ import java.util.UUID;
 @Service
 public class TicketService {
     private final TicketRepository ticketRepository;
+    private final TicketClassificationService ticketClassificationService;
 
-    public TicketService(TicketRepository ticketRepository) {
+    public TicketService(
+            TicketRepository ticketRepository,
+            TicketClassificationService ticketClassificationService
+    ) {
         this.ticketRepository = ticketRepository;
+        this.ticketClassificationService = ticketClassificationService;
     }
 
     @Transactional
     public TicketResponse createTicket(TicketRequest request) {
+        return createTicket(request, false);
+    }
+
+    @Transactional
+    public TicketResponse createTicket(TicketRequest request, boolean autoClassify) {
         Ticket ticket = TicketMapper.toEntity(request);
         applyResolvedAtOnCreate(ticket);
 
         Ticket savedTicket = ticketRepository.save(ticket);
+        if (autoClassify) {
+            ticketClassificationService.autoClassifyTicket(savedTicket);
+            savedTicket = ticketRepository.findById(savedTicket.getId()).orElse(savedTicket);
+        }
         return TicketMapper.toResponse(savedTicket);
     }
 
@@ -50,9 +67,12 @@ public class TicketService {
     public TicketResponse updateTicket(UUID ticketId, TicketRequest request) {
         Ticket existingTicket = getTicketEntityOrThrow(ticketId);
         TicketStatus previousStatus = existingTicket.getStatus();
+        Category previousCategory = existingTicket.getCategory();
+        Priority previousPriority = existingTicket.getPriority();
 
         TicketMapper.applyToExisting(existingTicket, request);
         applyResolvedAtOnUpdate(existingTicket, previousStatus);
+        ticketClassificationService.recordManualOverride(existingTicket, previousCategory, previousPriority);
 
         Ticket updatedTicket = ticketRepository.save(existingTicket);
         return TicketMapper.toResponse(updatedTicket);

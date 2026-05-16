@@ -93,6 +93,21 @@ public class Ticket {
 
     @Column(name = "assigned_to", length = 255)
     private String assignedTo;
+    @Column(name = "classification_confidence")
+    private Double classificationConfidence;
+
+    @Column(name = "classification_reasoning", length = 2000)
+    private String classificationReasoning;
+
+    @Column(name = "classification_keywords", length = 2000)
+    private String classificationKeywords;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "classification_last_method", length = 32)
+    private ClassificationDecisionType classificationLastMethod;
+
+    @Column(name = "classification_last_updated_at")
+    private LocalDateTime classificationLastUpdatedAt;
 
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "ticket_tags", joinColumns = @JoinColumn(name = "ticket_id"))
@@ -224,6 +239,46 @@ public class Ticket {
 
     public void setAssignedTo(String assignedTo) {
         this.assignedTo = assignedTo;
+    }
+
+    public Double getClassificationConfidence() {
+        return classificationConfidence;
+    }
+
+    public void setClassificationConfidence(Double classificationConfidence) {
+        this.classificationConfidence = classificationConfidence;
+    }
+
+    public String getClassificationReasoning() {
+        return classificationReasoning;
+    }
+
+    public void setClassificationReasoning(String classificationReasoning) {
+        this.classificationReasoning = classificationReasoning;
+    }
+
+    public String getClassificationKeywords() {
+        return classificationKeywords;
+    }
+
+    public void setClassificationKeywords(String classificationKeywords) {
+        this.classificationKeywords = classificationKeywords;
+    }
+
+    public ClassificationDecisionType getClassificationLastMethod() {
+        return classificationLastMethod;
+    }
+
+    public void setClassificationLastMethod(ClassificationDecisionType classificationLastMethod) {
+        this.classificationLastMethod = classificationLastMethod;
+    }
+
+    public LocalDateTime getClassificationLastUpdatedAt() {
+        return classificationLastUpdatedAt;
+    }
+
+    public void setClassificationLastUpdatedAt(LocalDateTime classificationLastUpdatedAt) {
+        this.classificationLastUpdatedAt = classificationLastUpdatedAt;
     }
 
     public List<String> getTags() {

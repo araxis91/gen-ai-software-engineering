@@ -3,6 +3,8 @@ package com.homework2.support.api;
 import com.homework2.support.api.dto.TicketRequest;
 import com.homework2.support.api.dto.TicketResponse;
 import com.homework2.support.api.dto.TicketImportSummaryResponse;
+import com.homework2.support.api.dto.TicketAutoClassificationResponse;
+import com.homework2.support.classification.TicketClassificationService;
 import com.homework2.support.domain.Category;
 import com.homework2.support.domain.Priority;
 import com.homework2.support.domain.TicketStatus;
@@ -38,20 +40,36 @@ import java.util.function.Function;
 public class TicketController {
     private final TicketService ticketService;
     private final TicketImportService ticketImportService;
+    private final TicketClassificationService ticketClassificationService;
 
-    public TicketController(TicketService ticketService, TicketImportService ticketImportService) {
+    public TicketController(
+            TicketService ticketService,
+            TicketImportService ticketImportService,
+            TicketClassificationService ticketClassificationService
+    ) {
         this.ticketService = ticketService;
         this.ticketImportService = ticketImportService;
+        this.ticketClassificationService = ticketClassificationService;
     }
 
     @PostMapping
-    public ResponseEntity<TicketResponse> createTicket(@Valid @RequestBody TicketRequest request) {
-        TicketResponse createdTicket = ticketService.createTicket(request);
+    public ResponseEntity<TicketResponse> createTicket(
+            @Valid @RequestBody TicketRequest request,
+            @RequestParam(name = "autoClassify", required = false) Boolean autoClassify,
+            @RequestParam(name = "auto_classify", required = false) Boolean autoClassifySnakeCase
+    ) {
+        boolean shouldAutoClassify = Boolean.TRUE.equals(autoClassify) || Boolean.TRUE.equals(autoClassifySnakeCase);
+        TicketResponse createdTicket = ticketService.createTicket(request, shouldAutoClassify);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTicket);
     }
     @PostMapping("/import")
     public TicketImportSummaryResponse importTickets(@RequestParam("file") MultipartFile file) {
         return ticketImportService.importTickets(file);
+    }
+
+    @PostMapping("/{id}/auto-classify")
+    public TicketAutoClassificationResponse autoClassifyTicket(@PathVariable("id") UUID ticketId) {
+        return ticketClassificationService.autoClassifyTicket(ticketId);
     }
 
     @GetMapping
