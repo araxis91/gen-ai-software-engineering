@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-05-16T12:08:00Z",
+  "status": 415,
+  "error": "Unsupported Media Type",
+  "message": "Unsupported media type.",
+  "path": "/tickets/import",
+  "details": [
+    {
+      "field": "contentType",
+      "message": "application/octet-stream"
+    }
+  ]
+}

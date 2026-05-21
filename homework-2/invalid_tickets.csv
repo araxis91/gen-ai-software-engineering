@@ -1,0 +1,4 @@
+customer_id,customer_email,customer_name,subject,description,category,priority,status,resolved_at,assigned_to,tags,source,browser,device_type
+invalid-001,not-an-email,Broken Email,Access issue,Cannot access account after reset with enough detail text.,account_access,high,new,,,login|email,web_form,Chrome,desktop
+invalid-002,valid2@example.com,Bad Enum,Enum issue,Description text long enough to pass length constraints for ticket.,invalid_category,high,new,,,enum|parse,email,Firefox,mobile
+invalid-003,valid3@example.com,Missing Metadata,,short,technical_issue,medium,resolved,not-a-datetime,,metadata|missing,,,

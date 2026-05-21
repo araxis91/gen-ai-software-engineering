@@ -1,0 +1,36 @@
+{
+  "tickets": [
+    {
+      "customer_id": "invalid-json-001",
+      "customer_email": "bad-email",
+      "customer_name": "Invalid Json Email",
+      "subject": "Billing check",
+      "description": "Need billing help but this ticket has invalid email format for validation path.",
+      "category": "billing_question",
+      "priority": "super_urgent",
+      "status": "new",
+      "tags": [
+        "billing",
+        "invalid"
+      ],
+      "metadata": {
+        "source": "api",
+        "browser": "Chrome",
+        "device_type": "desktop"
+      }
+    },
+    {
+      "customer_id": "invalid-json-002",
+      "customer_email": "valid@example.com",
+      "customer_name": "Invalid Json Missing Metadata",
+      "subject": "Missing metadata",
+      "description": "This ticket omits metadata values and should fail non-null validation checks.",
+      "category": "feature_request",
+      "priority": "low",
+      "status": "new",
+      "tags": [
+        "missing"
+      ]
+    }
+  ]
+}

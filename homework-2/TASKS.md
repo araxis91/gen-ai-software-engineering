@@ -28,16 +28,17 @@ Build a customer support ticket management system that imports tickets from mult
 
 Create a REST API for support tickets with these endpoints:
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/tickets` | Create a new support ticket |
-| `POST` | `/tickets/import` | Bulk import from CSV/JSON/XML |
-| `GET` | `/tickets` | List all tickets (with filtering) |
-| `GET` | `/tickets/:id` | Get specific ticket |
-| `PUT` | `/tickets/:id` | Update ticket |
-| `DELETE` | `/tickets/:id` | Delete ticket |
+| Method   | Endpoint          | Description                       |
+| -------- | ----------------- | --------------------------------- |
+| `POST`   | `/tickets`        | Create a new support ticket       |
+| `POST`   | `/tickets/import` | Bulk import from CSV/JSON/XML     |
+| `GET`    | `/tickets`        | List all tickets (with filtering) |
+| `GET`    | `/tickets/:id`    | Get specific ticket               |
+| `PUT`    | `/tickets/:id`    | Update ticket                     |
+| `DELETE` | `/tickets/:id`    | Delete ticket                     |
 
 **Ticket Model:**
+
 ```json
 {
   "id": "UUID",
@@ -63,6 +64,7 @@ Create a REST API for support tickets with these endpoints:
 ```
 
 **Requirements:**
+
 - Parse CSV, JSON, and XML file formats
 - Validate all required fields (email format, string lengths, enums)
 - Return bulk import summary: total records, successful, failed with error details
@@ -76,6 +78,7 @@ Create a REST API for support tickets with these endpoints:
 Implement automatic ticket categorization and priority assignment.
 
 **Categories:**
+
 - `account_access` - login, password, 2FA issues
 - `technical_issue` - bugs, errors, crashes
 - `billing_question` - payments, invoices, refunds
@@ -84,12 +87,14 @@ Implement automatic ticket categorization and priority assignment.
 - `other` - uncategorizable
 
 **Priority Rules:**
+
 - **Urgent**: "can't access", "critical", "production down", "security"
 - **High**: "important", "blocking", "asap"
 - **Medium**: default
 - **Low**: "minor", "cosmetic", "suggestion"
 
 **Endpoint:**
+
 ```
 POST /tickets/:id/auto-classify
 ```
@@ -97,6 +102,7 @@ POST /tickets/:id/auto-classify
 **Response includes:** category, priority, confidence score (0-1), reasoning, keywords found
 
 **Requirements:**
+
 - Auto-run on ticket creation (optional flag)
 - Store classification confidence
 - Allow manual override
@@ -124,6 +130,7 @@ tests/
 ```
 
 **Test Coverage Requirements:**
+
 - Overall: >85%
 
 ---
@@ -133,6 +140,7 @@ tests/
 Generate 5 documentation files for different audiences:
 
 **1. README.md** (Developers)
+
 - Project overview and features
 - Architecture diagram (Mermaid)
 - Installation and setup instructions
@@ -140,12 +148,14 @@ Generate 5 documentation files for different audiences:
 - Project structure
 
 **2. API_REFERENCE.md** (API Consumers)
+
 - All endpoints with request/response examples
 - Data models and schemas
 - Error response formats
 - cURL examples for each endpoint
 
 **3. ARCHITECTURE.md** (Technical Leads)
+
 - High-level architecture diagram (Mermaid)
 - Component descriptions
 - Data flow diagrams (Mermaid sequence diagrams)
@@ -153,6 +163,7 @@ Generate 5 documentation files for different audiences:
 - Security and performance considerations
 
 **4. TESTING_GUIDE.md** (QA Engineers)
+
 - Test pyramid diagram (Mermaid)
 - How to run tests
 - Sample test data locations
@@ -160,6 +171,7 @@ Generate 5 documentation files for different audiences:
 - Performance benchmarks table
 
 **Requirements:**
+
 - Use different AI models for different doc types
 - Include at least 3 Mermaid diagrams across documents
 
@@ -170,6 +182,7 @@ Generate 5 documentation files for different audiences:
 Implement end-to-end tests.
 
 **Integration Tests:**
+
 - Complete ticket lifecycle workflow
 - Bulk import with auto-classification verification
 - Concurrent operations (20+ simultaneous requests)
@@ -182,14 +195,16 @@ Implement end-to-end tests.
 ### 1️⃣ Source Code
 
 ### 2️⃣ Test Coverage Report
+
 - Coverage report showing >85%
 - Screenshot in `docs/screenshots/test_coverage.png`
 
 ### 3️⃣ Sample Data
+
 - `sample_tickets.csv` (50 tickets)
 - `sample_tickets.json` (20 tickets)
 - `sample_tickets.xml` (30 tickets)
-- Invalid data files for negative tests
+- Invalid data files for negative tests.
 
 ---
 
