@@ -42,7 +42,16 @@ Scope boundary: this service owns card issuance, state transitions, limit enforc
 
 ## Non-Functional & Policy Requirements
 
-### Performance (assumed targets — reasonable for FinTech UX)
+### Performance
+
+**Expected load:**
+- Average: **20,000 requests/day** (~14 RPS distributed across 24 hours).
+- Peak: **2,000 requests/hour** (~34 RPS sustained), used as the dimensioning baseline.
+
+This load is comfortably served by a single-node PostgreSQL 15 instance with HikariCP (pool size 10–20) and proper indexing. Horizontal scaling and a Redis-backed rate limiter are not required at this volume but should be reconsidered if peak load grows beyond ~200 RPS.
+
+**Latency targets** (assumed — reasonable for FinTech UX at the above load):
+
 | Operation | p50 | p95 | p99 | Rationale |
 |-----------|-----|-----|-----|-----------|
 | `GET /cards/{id}` | 20 ms | 50 ms | 100 ms | Read from DB with cache |
@@ -51,7 +60,7 @@ Scope boundary: this service owns card issuance, state transitions, limit enforc
 | `PATCH /cards/{id}/status` | 40 ms | 100 ms | 200 ms | Single row update + audit write |
 | `PUT /cards/{id}/limits` | 40 ms | 100 ms | 200 ms | Upsert + validation |
 
-These are **assumed targets** — realistic for a single-region deployment with connection pooling (HikariCP) and an indexed PostgreSQL schema.
+Targets are validated against the 34 RPS peak baseline. Load testing must be run before committing to these as contractual SLAs.
 
 ### Rate Limiting
 - 60 write requests/min per authenticated user (card issuance, state changes, limit updates).
@@ -60,11 +69,14 @@ These are **assumed targets** — realistic for a single-region deployment with 
 - Violations return HTTP 429 with `Retry-After` header.
 
 ### Availability & Reliability
-- Target: **99.9% monthly uptime** (≈ 43 min downtime/month).
+- Target: **the service should operate 24/7**. Exceptions are: 
+  1. Routine maintenance of bank systems.
+  2. The last day of the year is a restriction regulated by the NBU
 - Database: PostgreSQL with connection pool size 10–20; retry on transient failures with exponential backoff (3 attempts, 100 ms / 200 ms / 400 ms).
 - No in-memory state; service is stateless and horizontally scalable.
 
 ### Security Policy
+- **Every API request must include a valid JWT Bearer token in the `Authorization: Bearer <token>` header.** The only exception is `GET /actuator/health`. Any request missing or carrying an invalid/expired token must be rejected with HTTP 401 before any business logic executes.
 - Authentication: JWT Bearer tokens (RS256, 15-min expiry, refresh token pattern out of scope).
 - Authorisation: resource-level ownership check — a user may only access their own cards; ops role may read all cards.
 - PAN, CVV: encrypted with AES-256-GCM at rest using a key from environment variable / secrets manager. Never stored plain-text.
@@ -133,9 +145,10 @@ These are **assumed targets** — realistic for a single-region deployment with 
   - `401` — missing/invalid JWT
   - `403` — authenticated but not authorised (wrong owner / insufficient role)
   - `404` — resource not found
-  - `409` — state transition conflict (e.g., freeze already-frozen card)
   - `422` — business rule violation (limit exceeded, invalid limit value)
   - `429` — rate limit exceeded
+  - `460` — bad request (for blacklist)
+  - `462` — state transition conflict (e.g., freeze already-frozen card)
   - `500` — unexpected server error (no sensitive detail in body)
 
 ### Naming & Code Conventions
@@ -215,6 +228,7 @@ src/
           ErrorResponse.java
       config/
         EncryptionConfig.java
+        OpenApiConfig.java
         RateLimiterConfig.java
         HikariConfig.java
       exception/
@@ -228,6 +242,7 @@ src/
         MoneyConverter.java
   resources/
     application.yml
+    application-prod.yml
     application-test.yml
     db/migration/
       V1__create_virtual_cards.sql

@@ -17,6 +17,7 @@ This document configures AI coding agents (Claude Code, GitHub Copilot, Cursor) 
 - **Money**: `BigDecimal` for calculations; `long` (minor currency units) for storage. Never `float` or `double`.
 - **UUIDs**: `java.util.UUID` everywhere for entity IDs. Never auto-increment integers.
 - **Time**: `java.time.OffsetDateTime` everywhere. Never `java.util.Date` or `java.sql.Timestamp`.
+- **API Documentation**: every Java REST API service must include `springdoc-openapi-starter-webmvc-ui` by default. Swagger UI must be available in `dev` and `staging` profiles and disabled in `prod`. All controllers and DTOs must be annotated with `@Operation`, `@ApiResponse`, `@Parameter`, and `@Schema` as part of the initial implementation, not as an afterthought.
 
 ---
 

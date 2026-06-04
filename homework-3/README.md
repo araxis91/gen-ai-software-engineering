@@ -1,6 +1,7 @@
 # Homework 3: Specification-Driven Design
 
 **Student**: Dmytro Cherneha  
+**Date Submitted:** 2026-06-04
 **Task**: Design a specification package for a virtual bank card lifecycle management service (Java + Spring Boot).
 
 ---
