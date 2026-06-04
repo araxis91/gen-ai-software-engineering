@@ -9,6 +9,7 @@ This is a **regulated FinTech service** handling virtual payment card lifecycle 
 ## Mandatory First Steps
 
 Before writing any code:
+
 1. Read `specification.md` — it is the authoritative source of truth for all requirements, edge cases, and acceptance criteria.
 2. Read `agents.md` — it defines all domain rules, coding conventions, and what the agent must not do.
 3. Check which Low-Level Task you are implementing and identify which Mid-Level Objectives it serves.
@@ -18,6 +19,7 @@ Before writing any code:
 ## Hard Rules (Never Violate)
 
 ### PAN Safety
+
 - `NEVER` write a log statement that could contain a PAN or card number.
 - `NEVER` return a raw PAN in any JSON response.
 - `NEVER` store PAN in plain text. Encrypt before any persistence operation.
@@ -25,23 +27,27 @@ Before writing any code:
 - Regex to detect accidental PAN leakage in log strings: `\b\d{13,19}\b` — ensure none of your generated log messages match this.
 
 ### Monetary Precision
+
 - `NEVER` use `double` or `float` for amounts. `BigDecimal` in Java, `BIGINT` in SQL.
 - `NEVER` pass a bare numeric amount without an accompanying currency code.
 
 ### Ownership & Authorization
+
 - `NEVER` load a resource then check ownership in Java. Always filter at the database query level (e.g., `findByIdAndUserId`).
 - `NEVER` trust user-supplied IDs for authorization. Always derive the acting user from the JWT via `SecurityContextHolder`.
 
 ### Audit Trail
+
 - `NEVER` skip calling `AuditEventService.record(...)` after a state-changing operation.
 - `NEVER` write to `audit_events` table from anywhere other than `AuditEventService`.
-- `NEVER` add `DELETE` or `UPDATE` operations on `audit_events`.
+- `NEVER` add `DELETE` or `UPDATE` operations on `audit_events`
 
 ---
 
 ## Patterns to Follow
 
 ### Service Layer Pattern
+
 ```java
 @Service
 @RequiredArgsConstructor  // or manual constructor injection
@@ -73,6 +79,7 @@ public class CardStateService {
 ```
 
 ### Error Response Pattern
+
 ```java
 // In GlobalExceptionHandler:
 @ExceptionHandler(CardNotFoundException.class)
@@ -83,6 +90,7 @@ public ResponseEntity<ErrorResponse> handleCardNotFound(CardNotFoundException ex
 ```
 
 ### DTO Immutability Pattern
+
 - Request DTOs: use Java records or final fields with `@JsonCreator`.
 - Response DTOs: use Java records or static factory `from(Entity entity)` method.
 - Never expose JPA entities directly in controller responses.
@@ -91,19 +99,19 @@ public ResponseEntity<ErrorResponse> handleCardNotFound(CardNotFoundException ex
 
 ## File Placement
 
-| Type | Package |
-|------|---------|
-| JPA Entities | `com.example.virtualcard.domain` |
-| Enums | `com.example.virtualcard.domain.enums` |
-| Repositories | `com.example.virtualcard.repository` |
-| Services | `com.example.virtualcard.service` |
-| Audit | `com.example.virtualcard.audit` |
-| Controllers | `com.example.virtualcard.web` |
-| DTOs | `com.example.virtualcard.web.dto` |
-| Security | `com.example.virtualcard.security` |
-| Config | `com.example.virtualcard.config` |
-| Exceptions | `com.example.virtualcard.exception` |
-| Utilities | `com.example.virtualcard.util` |
+| Type         | Package                                |
+| ------------ | -------------------------------------- |
+| JPA Entities | `com.example.virtualcard.domain`       |
+| Enums        | `com.example.virtualcard.domain.enums` |
+| Repositories | `com.example.virtualcard.repository`   |
+| Services     | `com.example.virtualcard.service`      |
+| Audit        | `com.example.virtualcard.audit`        |
+| Controllers  | `com.example.virtualcard.web`          |
+| DTOs         | `com.example.virtualcard.web.dto`      |
+| Security     | `com.example.virtualcard.security`     |
+| Config       | `com.example.virtualcard.config`       |
+| Exceptions   | `com.example.virtualcard.exception`    |
+| Utilities    | `com.example.virtualcard.util`         |
 
 ---
 
@@ -143,6 +151,7 @@ public ResponseEntity<ErrorResponse> handleCardNotFound(CardNotFoundException ex
 ## Performance Defaults
 
 When generating repository queries:
+
 - Add `Pageable` parameter to any method that could return more than one result.
 - Default sort: `createdAt DESC` for time-series data.
 - For counts used in validation (e.g., max cards), use `count` queries not `findAll`.
