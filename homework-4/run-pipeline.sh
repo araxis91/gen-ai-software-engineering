@@ -44,6 +44,7 @@ FAIL_ON_CRITICAL="${FAIL_ON_CRITICAL:-1}"
 
 DRY_RUN=0
 BUG_ID="001"
+FROM_STEP=1
 OVERALL=0
 
 # --------------------------------------------------------------------------- #
@@ -116,6 +117,9 @@ check_prereq() {
 
 gate_file() { [ -f "$1" ] || die "Gate failed: expected output not produced: $(rel "$1")"; }
 
+# Return 0 (true) if the given step number should be skipped.
+skip_step() { [ "$1" -lt "$FROM_STEP" ]; }
+
 # Echo the first verdict-like token found in a file, upper-cased.
 first_token() { grep -oiE "$2" "$1" 2>/dev/null | head -n1 | tr '[:lower:]' '[:upper:]' || true; }
 
@@ -154,10 +158,12 @@ run_agent() {
 # --------------------------------------------------------------------------- #
 for arg in "$@"; do
   case "$arg" in
-    --dry-run)  DRY_RUN=1 ;;
-    --help|-h)  show_help; exit 0 ;;
-    -*)         die "Unknown option: $arg (try --help)" ;;
-    *)          BUG_ID="$arg" ;;
+    --dry-run)       DRY_RUN=1 ;;
+    --from-step=*)   FROM_STEP="${arg#--from-step=}" ;;
+    --from-step)     die "--from-step requires a value (e.g. --from-step=3)" ;;
+    --help|-h)       show_help; exit 0 ;;
+    -*)              die "Unknown option: $arg (try --help)" ;;
+    *)               BUG_ID="$arg" ;;
   esac
 done
 
@@ -192,55 +198,75 @@ ok "all 4 agent definitions found"
 check_prereq "$RESEARCH_MD" "Bug Researcher output: research/codebase-research.md"
 
 # --- Stage 1: Bug Research Verifier ---------------------------------------- #
-run_agent "Stage 1/4 — Bug Research Verifier" "$AGENTS_DIR/research-verifier.agent.md" \
-  "Verify the bug research for bug ${BUG_ID}. Read ${RESEARCH_MD} and check every reference and snippet against the source under src/. Apply the research-quality-measurement skill and write ${VERIFIED_MD} with all required sections."
-if [ "$DRY_RUN" -eq 0 ]; then
-  gate_file "$VERIFIED_MD"
-  case "$(first_token "$VERIFIED_MD" 'CONDITIONAL PASS|PASS|FAIL')" in
-    FAIL) die "Gate failed: research verdict is FAIL. Stopping before the Bug Fixer." ;;
-    "")   warn "Gate: no explicit verdict found in $(rel "$VERIFIED_MD"); proceeding with caution." ;;
-    *)    ok "Gate passed: research verified (proceeding to fix)." ;;
-  esac
+if skip_step 1; then
+  log "Stage 1/4 skipped (--from-step=$FROM_STEP) — checking output exists."
+  [ "$DRY_RUN" -eq 0 ] && gate_file "$VERIFIED_MD" && ok "$(rel "$VERIFIED_MD") present."
+else
+  run_agent "Stage 1/4 — Bug Research Verifier" "$AGENTS_DIR/research-verifier.agent.md" \
+    "Verify the bug research for bug ${BUG_ID}. Read ${RESEARCH_MD} and check every reference and snippet against the source under src/. Apply the research-quality-measurement skill and write ${VERIFIED_MD} with all required sections."
+  if [ "$DRY_RUN" -eq 0 ]; then
+    gate_file "$VERIFIED_MD"
+    case "$(first_token "$VERIFIED_MD" 'CONDITIONAL PASS|PASS|FAIL')" in
+      FAIL) die "Gate failed: research verdict is FAIL. Stopping before the Bug Fixer." ;;
+      "")   warn "Gate: no explicit verdict found in $(rel "$VERIFIED_MD"); proceeding with caution." ;;
+      *)    ok "Gate passed: research verified (proceeding to fix)." ;;
+    esac
+  fi
 fi
 
 # Plan is required before the Bug Fixer can run
 check_prereq "$PLAN_MD" "Bug Planner output: implementation-plan.md"
 
 # --- Stage 2: Bug Fixer ----------------------------------------------------- #
-run_agent "Stage 2/4 — Bug Fixer" "$AGENTS_DIR/bug-fixer.agent.md" \
-  "Execute the implementation plan for bug ${BUG_ID}. Read ${PLAN_MD}, apply each change to the source under src/, run the plan's test command after each change, and write ${FIX_MD}. Stop and document if a test fails."
-if [ "$DRY_RUN" -eq 0 ]; then
-  gate_file "$FIX_MD"
-  case "$(first_token "$FIX_MD" 'COMPLETE|BLOCKED')" in
-    BLOCKED) die "Gate failed: Bug Fixer reported BLOCKED. Stopping (review ${FIX_MD})." ;;
-    "")      warn "Gate: no explicit status in $(rel "$FIX_MD"); proceeding with caution." ;;
-    *)       ok "Gate passed: fixes applied (Overall Status COMPLETE)." ;;
-  esac
+if skip_step 2; then
+  log "Stage 2/4 skipped (--from-step=$FROM_STEP) — checking output exists."
+  [ "$DRY_RUN" -eq 0 ] && gate_file "$FIX_MD" && ok "$(rel "$FIX_MD") present."
+else
+  run_agent "Stage 2/4 — Bug Fixer" "$AGENTS_DIR/bug-fixer.agent.md" \
+    "Execute the implementation plan for bug ${BUG_ID}. Read ${PLAN_MD}, apply each change to the source under src/, run the plan's test command after each change, and write ${FIX_MD}. Stop and document if a test fails."
+  if [ "$DRY_RUN" -eq 0 ]; then
+    gate_file "$FIX_MD"
+    case "$(first_token "$FIX_MD" 'COMPLETE|BLOCKED')" in
+      BLOCKED) die "Gate failed: Bug Fixer reported BLOCKED. Stopping (review ${FIX_MD})." ;;
+      "")      warn "Gate: no explicit status in $(rel "$FIX_MD"); proceeding with caution." ;;
+      *)       ok "Gate passed: fixes applied (Overall Status COMPLETE)." ;;
+    esac
+  fi
 fi
 
 # --- Stage 3: Security Verifier (depends on Bug Fixer) ---------------------- #
-run_agent "Stage 3/4 — Security Vulnerabilities Verifier" "$AGENTS_DIR/security-verifier.agent.md" \
-  "Perform a security review of the code changed by the Bug Fixer for bug ${BUG_ID}. Read ${FIX_MD} and the changed files, then write ${SEC_MD}. Report only — do not edit code."
-if [ "$DRY_RUN" -eq 0 ]; then
-  gate_file "$SEC_MD"
-  if grep -qiE '\bCRITICAL\b' "$SEC_MD"; then
-    warn "Security review reports CRITICAL finding(s) — review ${SEC_MD}."
-    [ "$FAIL_ON_CRITICAL" = "1" ] && OVERALL=1
-  else
-    ok "Security review complete (no CRITICAL findings)."
+if skip_step 3; then
+  log "Stage 3/4 skipped (--from-step=$FROM_STEP) — checking output exists."
+  [ "$DRY_RUN" -eq 0 ] && gate_file "$SEC_MD" && ok "$(rel "$SEC_MD") present."
+else
+  run_agent "Stage 3/4 — Security Vulnerabilities Verifier" "$AGENTS_DIR/security-verifier.agent.md" \
+    "Perform a security review of the code changed by the Bug Fixer for bug ${BUG_ID}. Read ${FIX_MD} and the changed files, then write ${SEC_MD}. Report only — do not edit code."
+  if [ "$DRY_RUN" -eq 0 ]; then
+    gate_file "$SEC_MD"
+    if grep -qiE '\bCRITICAL\b' "$SEC_MD"; then
+      warn "Security review reports CRITICAL finding(s) — review ${SEC_MD}."
+      [ "$FAIL_ON_CRITICAL" = "1" ] && OVERALL=1
+    else
+      ok "Security review complete (no CRITICAL findings)."
+    fi
   fi
 fi
 
 # --- Stage 4: Unit Test Generator (depends on Bug Fixer) -------------------- #
-run_agent "Stage 4/4 — Unit Test Generator" "$AGENTS_DIR/unit-test-generator.agent.md" \
-  "Generate and run unit tests for the code changed by the Bug Fixer for bug ${BUG_ID}. Read ${FIX_MD} and the changed files, write tests for the changed code only (applying the unit-tests-FIRST skill) into the project's test location, run the project's test command, and write ${TEST_MD}."
-if [ "$DRY_RUN" -eq 0 ]; then
-  gate_file "$TEST_MD"
-  case "$(first_token "$TEST_MD" 'PASS|FAIL')" in
-    FAIL) err "Unit tests reported FAIL — review ${TEST_MD}."; OVERALL=1 ;;
-    "")   warn "Gate: no explicit test status in $(rel "$TEST_MD")." ;;
-    *)    ok "Unit tests passed." ;;
-  esac
+if skip_step 4; then
+  log "Stage 4/4 skipped (--from-step=$FROM_STEP) — checking output exists."
+  [ "$DRY_RUN" -eq 0 ] && gate_file "$TEST_MD" && ok "$(rel "$TEST_MD") present."
+else
+  run_agent "Stage 4/4 — Unit Test Generator" "$AGENTS_DIR/unit-test-generator.agent.md" \
+    "Generate and run unit tests for the code changed by the Bug Fixer for bug ${BUG_ID}. Read ${FIX_MD} and the changed files, write tests for the changed code only (applying the unit-tests-FIRST skill) into the project's test location, run the project's test command, and write ${TEST_MD}."
+  if [ "$DRY_RUN" -eq 0 ]; then
+    gate_file "$TEST_MD"
+    case "$(first_token "$TEST_MD" 'PASS|FAIL')" in
+      FAIL) err "Unit tests reported FAIL — review ${TEST_MD}."; OVERALL=1 ;;
+      "")   warn "Gate: no explicit test status in $(rel "$TEST_MD")." ;;
+      *)    ok "Unit tests passed." ;;
+    esac
+  fi
 fi
 
 # --- Summary ---------------------------------------------------------------- #
