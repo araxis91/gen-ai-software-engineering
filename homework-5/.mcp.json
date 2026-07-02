@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/dimachernega/Projects/Python/AI Courses/homework/gen-ai-software-engineering/homework-5"
+      ],
+      "env": {}
+    },
+    "atlassian": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v1/mcp/authv2"
+    }
+  }
+}
