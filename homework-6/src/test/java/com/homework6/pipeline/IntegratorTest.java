@@ -10,8 +10,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -130,6 +132,69 @@ class IntegratorTest {
         String settledAtSecondRun = readResult("ITX001").at("/data/state/settled_at").asText();
 
         assertEquals(settledAtFirstRun, settledAtSecondRun, "re-running must not re-settle an already-terminal transaction");
+    }
+
+    @Test
+    void run_withSubsetSequence_skipsUnconfiguredStages() throws IOException {
+        // Skips fraud detection and compliance entirely -- ITX004 (normally flagged for
+        // high value) settles instead, proving the sequence, not the agent, decides routing.
+        PipelineSequence subset = PipelineSequence.of("transaction_validator", "settlement_processor");
+
+        new Integrator(sharedRoot, sampleTransactionsFile, subset).run();
+
+        assertEquals("SETTLED", readResult("ITX001").at("/data/state/status").asText());
+        assertEquals("REJECTED", readResult("ITX002").at("/data/state/status").asText(), "validator still runs first");
+        assertEquals("SETTLED", readResult("ITX003").at("/data/state/status").asText(),
+                "compliance checker not in this sequence, so the blocked account is never caught");
+        assertEquals("SETTLED", readResult("ITX004").at("/data/state/status").asText(),
+                "fraud detector not in this sequence, so the high-value flag never triggers");
+    }
+
+    @Test
+    void run_withReversedSequence_firstConfiguredAgentReceivesTheSeededMessages() throws IOException {
+        // compliance_checker runs before fraud/validation -- still catches the blocked account.
+        PipelineSequence reversed = PipelineSequence.of("compliance_checker", "settlement_processor");
+
+        new Integrator(sharedRoot, sampleTransactionsFile, reversed).run();
+
+        assertEquals("REJECTED", readResult("ITX003").at("/data/state/status").asText());
+        assertEquals("BLOCKED_DESTINATION_ACCOUNT", readResult("ITX003").at("/data/state/reason_code").asText());
+        assertEquals("SETTLED", readResult("ITX001").at("/data/state/status").asText());
+        assertEquals("SETTLED", readResult("ITX002").at("/data/state/status").asText(),
+                "validator not in this sequence, so the invalid currency is never caught");
+    }
+
+    @Test
+    void constructor_sequenceWithUnknownAgentName_throws() {
+        PipelineSequence bogus = PipelineSequence.of("not_a_real_agent");
+        assertThrows(IllegalArgumentException.class, () -> new Integrator(sharedRoot, sampleTransactionsFile, bogus));
+    }
+
+    @Test
+    void seedInputThenRunStage_calledIndividuallyOneAtATime_reachesSameResultAsRun() throws IOException {
+        Integrator integrator = new Integrator(sharedRoot, sampleTransactionsFile);
+
+        integrator.seedInput();
+        integrator.runStage("transaction_validator");
+        integrator.runStage("fraud_detector");
+        integrator.runStage("compliance_checker");
+        integrator.runStage("settlement_processor");
+
+        assertEquals("SETTLED", readResult("ITX001").at("/data/state/status").asText());
+        assertEquals("REJECTED", readResult("ITX003").at("/data/state/status").asText());
+    }
+
+    @Test
+    void runStage_calledBeforeAnythingIsQueuedForIt_processesZeroMessagesWithoutError() {
+        Integrator integrator = new Integrator(sharedRoot, sampleTransactionsFile);
+
+        assertDoesNotThrow(() -> integrator.runStage("settlement_processor"));
+    }
+
+    @Test
+    void runStage_unknownAgentName_throws() {
+        Integrator integrator = new Integrator(sharedRoot, sampleTransactionsFile);
+        assertThrows(IllegalArgumentException.class, () -> integrator.runStage("not_a_real_agent"));
     }
 
     private boolean isEmpty(Path dir) throws IOException {

@@ -1,20 +1,19 @@
 package com.homework6.pipeline.agent;
 
 import com.homework6.pipeline.audit.AuditLogger;
-import com.homework6.pipeline.model.PipelineMessage;
 import com.homework6.pipeline.model.Transaction;
 import com.homework6.pipeline.model.TransactionRecord;
 import com.homework6.pipeline.util.MoneyUtil;
 
 /**
  * Checks required fields, positive amount, and ISO 4217 currency before a transaction
- * is allowed to proceed to fraud detection. Each rule is an independently testable
- * private check, per agents.md testing conventions.
+ * is allowed to proceed further. Each rule is an independently testable private check,
+ * per agents.md testing conventions. Does not decide what runs next — see
+ * {@code com.homework6.pipeline.PipelineSequence}.
  */
 public final class TransactionValidatorAgent implements PipelineAgent {
 
     public static final String NAME = "transaction_validator";
-    private static final String NEXT_AGENT = "fraud_detector";
 
     private final AuditLogger auditLogger;
 
@@ -28,22 +27,18 @@ public final class TransactionValidatorAgent implements PipelineAgent {
     }
 
     @Override
-    public PipelineMessage process(PipelineMessage message) {
-        TransactionRecord record = message.data();
+    public TransactionRecord process(TransactionRecord record) {
         Transaction tx = record.transaction();
 
         String rejectionReasonCode = firstFailingRule(tx);
         if (rejectionReasonCode != null) {
-            TransactionRecord rejected = record.withState(
-                    record.state().rejected(rejectionReasonCode, describe(rejectionReasonCode)));
             auditLogger.recordWithAccounts(NAME, tx.transactionId(), "REJECTED:" + rejectionReasonCode,
                     tx.sourceAccount(), tx.destinationAccount());
-            return message.terminal(NAME, rejected);
+            return record.withState(record.state().rejected(rejectionReasonCode, describe(rejectionReasonCode)));
         }
 
-        TransactionRecord validated = record.withState(record.state().validated());
         auditLogger.record(NAME, tx.transactionId(), "VALIDATED");
-        return message.routedTo(NAME, NEXT_AGENT, validated);
+        return record.withState(record.state().validated());
     }
 
     private String firstFailingRule(Transaction tx) {

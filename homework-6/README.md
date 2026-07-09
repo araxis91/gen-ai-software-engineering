@@ -16,6 +16,8 @@ The pipeline itself (this repository's four-stage Java system) is the _deliverab
 - **Compliance Checker** (`ComplianceCheckerAgent`) — rejects transactions to denylisted destination accounts outright, and puts large cross-border wire transfers on a manual compliance hold rather than auto-approving them.
 - **Settlement Processor** (`SettlementProcessorAgent`) — the terminal stage: generates a settlement id and timestamp for everything that clears the first three stages, and is itself idempotent so a re-run never double-settles a transaction.
 
+Each agent is a pure transform (`TransactionRecord process(TransactionRecord record)`) — none of them know what runs before or after them. Stage order is decided entirely by `PipelineSequence` and enforced by `Integrator`, which is what makes the pipeline configurable (see below).
+
 ## Architecture
 
 ```
@@ -58,6 +60,40 @@ The pipeline itself (this repository's four-stage Java system) is the _deliverab
 
 Agents hand messages to each other exclusively through `shared/input/ → shared/processing/ → shared/output/ → shared/results/`, using atomic file writes so a reader never observes a partially-written message.
 
+## Configuring the pipeline
+
+The diagram above shows the *default* order, but it's just a default — `PipelineSequence` is the single source of truth for what runs after what, and it's fully configurable:
+
+```bash
+# default order (unchanged)
+java -cp <classpath> com.homework6.pipeline.Integrator
+
+# skip stages entirely — e.g. only validate and settle, no fraud/compliance checks
+java -cp <classpath> com.homework6.pipeline.Integrator --sequence=transaction_validator,settlement_processor
+
+# reorder — e.g. run compliance before fraud/validation
+java -cp <classpath> com.homework6.pipeline.Integrator --sequence=compliance_checker,fraud_detector,transaction_validator,settlement_processor
+
+# run exactly one stage on whatever's already queued for it, instead of a full pass
+java -cp <classpath> com.homework6.pipeline.Integrator --stage=fraud_detector
+```
+
+This works because agents never decide what runs next themselves — see `PipelineAgent`'s contract in `agents.md`. Reordering or dropping a stage changes real outcomes (e.g. dropping `compliance_checker` means a denylisted destination account is never caught), which is expected: the configured sequence is a first-class decision, not a workaround.
+
+Programmatically, the same thing looks like:
+
+```java
+Integrator integrator = new Integrator(sharedRoot, sampleTransactionsFile,
+        PipelineSequence.of("compliance_checker", "settlement_processor"));
+integrator.run();
+
+// or drive stages one at a time, in whatever order you choose:
+Integrator manual = new Integrator();
+manual.seedInput();
+manual.runStage("compliance_checker");
+manual.runStage("settlement_processor");
+```
+
 ## Tech stack
 
 | Layer                     | Technology                                                                                                                 |
@@ -73,7 +109,7 @@ Agents hand messages to each other exclusively through `shared/input/ → shared
 ## Repository layout
 
 - `specification.md`, `agents.md` — the project spec and AI-agent guidelines (Task 1).
-- `src/main/java/com/homework6/pipeline/` — the pipeline itself: `Integrator`, `agent/`, `model/`, `messaging/`, `audit/`, `config/`, `util/`, `cli/` (Task 2).
+- `src/main/java/com/homework6/pipeline/` — the pipeline itself: `Integrator`, `PipelineSequence` (configurable stage order), `CliArgs`, `agent/`, `model/`, `messaging/`, `audit/`, `config/`, `util/`, `cli/` (Task 2).
 - `src/test/java/...` — unit tests per class + `IntegratorTest` (full-pipeline integration test) (Task 5).
 - `.claude/commands/` — `write-spec.md`, `run-pipeline.md`, `validate-transactions.md` skills; `.claude/settings.json` + `scripts/coverage-gate.sh` — the coverage-gate hook (Task 3).
 - `mcp/server.py`, `.mcp.json` — the custom FastMCP server (`get_transaction_status`, `list_pipeline_results`, `pipeline://summary`) plus `context7` (Task 4).

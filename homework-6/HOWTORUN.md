@@ -26,6 +26,20 @@ This loads `sample-transactions.json`, runs every transaction through the four-s
 
 Inside Claude Code (with `homework-6/` as the project root), the same thing is available as `/run-pipeline`, which also clears `shared/` first and reports rejected/flagged/held transactions.
 
+### Configuring which agents run, and in what order
+
+`Integrator` supports three flags for this — pass `--help` to see them:
+
+```bash
+java -cp "target/classes:$(cat /tmp/homework6-cp.txt)" com.homework6.pipeline.Integrator --help
+```
+
+- `--sequence=agent1,agent2,...` — run a custom order, or a subset of stages. Example: `--sequence=transaction_validator,settlement_processor` skips fraud detection and compliance entirely.
+- `--stage=agentName` — run exactly one named stage on whatever's currently queued for it, instead of a full pass. Useful for driving the pipeline one step at a time and inspecting `shared/output/` in between.
+- `--file=path` — load a different transactions file.
+
+Reordering changes real outcomes — e.g. running `compliance_checker` before `fraud_detector`/`transaction_validator` still catches denylisted accounts, but skipping a stage entirely means its rule is never enforced. This is by design: `PipelineAgent` implementations never decide what runs next (see `agents.md`), so the sequence is the only thing controlling pipeline wiring.
+
 ## 3. Validate transactions without running the full pipeline (dry run)
 
 ```bash

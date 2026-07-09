@@ -1,7 +1,6 @@
 package com.homework6.pipeline.agent;
 
 import com.homework6.pipeline.audit.AuditLogger;
-import com.homework6.pipeline.model.PipelineMessage;
 import com.homework6.pipeline.model.Transaction;
 import com.homework6.pipeline.model.TransactionRecord;
 import com.homework6.pipeline.model.TransactionStatus;
@@ -14,7 +13,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class SettlementProcessorAgentTest {
 
@@ -28,15 +26,12 @@ class SettlementProcessorAgentTest {
         var record = TransactionRecord.received(transaction);
         var complianceCleared = record.withState(
                 record.state().validated().fraudCleared(0, List.of()).complianceCleared());
-        PipelineMessage initial = PipelineMessage.initial("compliance_checker", SettlementProcessorAgent.NAME,
-                complianceCleared);
 
-        PipelineMessage result = agent.process(initial);
+        TransactionRecord result = agent.process(complianceCleared);
 
-        assertEquals(TransactionStatus.SETTLED, result.data().state().status());
-        assertNotNull(result.data().state().settlementId());
-        assertNotNull(result.data().state().settledAt());
-        assertNull(result.targetAgent(), "settlement is terminal -- must not route onward");
+        assertEquals(TransactionStatus.SETTLED, result.state().status());
+        assertNotNull(result.state().settlementId());
+        assertNotNull(result.state().settledAt());
     }
 
     @Test

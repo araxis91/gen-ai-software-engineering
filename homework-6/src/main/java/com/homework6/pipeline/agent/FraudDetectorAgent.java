@@ -2,7 +2,6 @@ package com.homework6.pipeline.agent;
 
 import com.homework6.pipeline.audit.AuditLogger;
 import com.homework6.pipeline.config.PipelineConfig;
-import com.homework6.pipeline.model.PipelineMessage;
 import com.homework6.pipeline.model.Transaction;
 import com.homework6.pipeline.model.TransactionRecord;
 
@@ -14,12 +13,12 @@ import java.util.Objects;
 /**
  * Scores a validated transaction 0-100 across three weighted factors (high value,
  * unusual timing, cross-border) and flags it for manual review at or above the
- * configured threshold. Weights/thresholds live in {@link PipelineConfig}.
+ * configured threshold. Weights/thresholds live in {@link PipelineConfig}. Does not
+ * decide what runs next — see {@code com.homework6.pipeline.PipelineSequence}.
  */
 public final class FraudDetectorAgent implements PipelineAgent {
 
     public static final String NAME = "fraud_detector";
-    private static final String NEXT_AGENT = "compliance_checker";
 
     private final AuditLogger auditLogger;
 
@@ -33,8 +32,7 @@ public final class FraudDetectorAgent implements PipelineAgent {
     }
 
     @Override
-    public PipelineMessage process(PipelineMessage message) {
-        TransactionRecord record = message.data();
+    public TransactionRecord process(TransactionRecord record) {
         Transaction tx = record.transaction();
 
         List<String> factors = new ArrayList<>();
@@ -55,14 +53,12 @@ public final class FraudDetectorAgent implements PipelineAgent {
         score = Math.min(score, PipelineConfig.MAX_RISK_SCORE);
 
         if (score >= PipelineConfig.FRAUD_FLAG_THRESHOLD) {
-            TransactionRecord flagged = record.withState(record.state().flaggedForReview(score, factors));
             auditLogger.record(NAME, tx.transactionId(), "FLAGGED_FOR_REVIEW:score=" + score);
-            return message.terminal(NAME, flagged);
+            return record.withState(record.state().flaggedForReview(score, factors));
         }
 
-        TransactionRecord cleared = record.withState(record.state().fraudCleared(score, factors));
         auditLogger.record(NAME, tx.transactionId(), "FRAUD_CLEARED:score=" + score);
-        return message.routedTo(NAME, NEXT_AGENT, cleared);
+        return record.withState(record.state().fraudCleared(score, factors));
     }
 
     boolean isHighValue(Transaction tx) {

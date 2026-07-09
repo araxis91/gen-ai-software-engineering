@@ -1,7 +1,6 @@
 package com.homework6.pipeline.agent;
 
 import com.homework6.pipeline.audit.AuditLogger;
-import com.homework6.pipeline.model.PipelineMessage;
 import com.homework6.pipeline.model.Transaction;
 import com.homework6.pipeline.model.TransactionRecord;
 import com.homework6.pipeline.model.TransactionStatus;
@@ -12,7 +11,6 @@ import java.time.OffsetDateTime;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 class TransactionValidatorAgentTest {
 
@@ -24,19 +22,15 @@ class TransactionValidatorAgentTest {
                 Map.of("channel", "online", "country", "US"));
     }
 
-    private PipelineMessage process(Transaction transaction) {
-        PipelineMessage initial = PipelineMessage.initial("integrator", TransactionValidatorAgent.NAME,
-                TransactionRecord.received(transaction));
-        return agent.process(initial);
+    private TransactionRecord process(Transaction transaction) {
+        return agent.process(TransactionRecord.received(transaction));
     }
 
     @Test
-    void process_validTransaction_routesToFraudDetectorAsValidated() {
-        PipelineMessage result = process(validTransaction());
+    void process_validTransaction_marksValidated() {
+        TransactionRecord result = process(validTransaction());
 
-        assertEquals(TransactionStatus.VALIDATED, result.data().state().status());
-        assertEquals("fraud_detector", result.targetAgent());
-        assertEquals(TransactionValidatorAgent.NAME, result.sourceAgent());
+        assertEquals(TransactionStatus.VALIDATED, result.state().status());
     }
 
     @Test
@@ -45,11 +39,10 @@ class TransactionValidatorAgentTest {
                 "ACC-1007", "ACC-8800", new BigDecimal("-100.00"), "GBP", "refund", "Refund for order #8821",
                 Map.of("channel", "online", "country", "GB"));
 
-        PipelineMessage result = process(transaction);
+        TransactionRecord result = process(transaction);
 
-        assertEquals(TransactionStatus.REJECTED, result.data().state().status());
-        assertEquals("NEGATIVE_AMOUNT", result.data().state().reasonCode());
-        assertNull(result.targetAgent());
+        assertEquals(TransactionStatus.REJECTED, result.state().status());
+        assertEquals("NEGATIVE_AMOUNT", result.state().reasonCode());
     }
 
     @Test
@@ -58,10 +51,10 @@ class TransactionValidatorAgentTest {
                 "ACC-1006", "ACC-7700", new BigDecimal("200.00"), "XYZ", "transfer", "Test payment",
                 Map.of("channel", "online", "country", "US"));
 
-        PipelineMessage result = process(transaction);
+        TransactionRecord result = process(transaction);
 
-        assertEquals(TransactionStatus.REJECTED, result.data().state().status());
-        assertEquals("INVALID_CURRENCY", result.data().state().reasonCode());
+        assertEquals(TransactionStatus.REJECTED, result.state().status());
+        assertEquals("INVALID_CURRENCY", result.state().reasonCode());
     }
 
     @Test
@@ -70,10 +63,10 @@ class TransactionValidatorAgentTest {
                 "", "ACC-7700", new BigDecimal("200.00"), "USD", "transfer", "Test payment",
                 Map.of("channel", "online", "country", "US"));
 
-        PipelineMessage result = process(transaction);
+        TransactionRecord result = process(transaction);
 
-        assertEquals(TransactionStatus.REJECTED, result.data().state().status());
-        assertEquals("MISSING_REQUIRED_FIELD", result.data().state().reasonCode());
+        assertEquals(TransactionStatus.REJECTED, result.state().status());
+        assertEquals("MISSING_REQUIRED_FIELD", result.state().reasonCode());
     }
 
     @Test
@@ -82,10 +75,10 @@ class TransactionValidatorAgentTest {
                 "ACC-1001", "ACC-2001", BigDecimal.ZERO, "USD", "transfer", "Zero amount",
                 Map.of("channel", "online", "country", "US"));
 
-        PipelineMessage result = process(transaction);
+        TransactionRecord result = process(transaction);
 
-        assertEquals(TransactionStatus.REJECTED, result.data().state().status());
-        assertEquals("NEGATIVE_AMOUNT", result.data().state().reasonCode());
+        assertEquals(TransactionStatus.REJECTED, result.state().status());
+        assertEquals("NEGATIVE_AMOUNT", result.state().reasonCode());
     }
 
     @Test

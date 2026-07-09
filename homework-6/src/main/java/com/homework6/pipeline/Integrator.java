@@ -24,8 +24,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Orchestrates the four-stage banking pipeline over shared/{input,processing,output,results}.
- * Re-running is safe: transactions already settled/rejected/flagged/held are skipped.
+ * Orchestrates the banking pipeline over shared/{input,processing,output,results}.
+ *
+ * <p>The pipeline's stage order is entirely governed by a {@link PipelineSequence} —
+ * agents themselves never decide what runs after them (see {@code PipelineAgent}
+ * javadoc). This means the stages can be reconfigured to run in any order, as a subset,
+ * or one at a time via {@link #runStage(String)}, without touching any agent class.
+ *
+ * <p>Re-running is safe: transactions already settled/rejected/flagged/held are skipped.
  */
 public final class Integrator {
 
@@ -37,52 +43,131 @@ public final class Integrator {
     private final Path output;
     private final Path results;
     private final Path sampleTransactionsFile;
+    private final PipelineSequence sequence;
 
     private final FileMessageBus bus = new FileMessageBus();
     private final AuditLogger auditLogger = new AuditLogger();
-
-    private final TransactionValidatorAgent validator = new TransactionValidatorAgent(auditLogger);
-    private final FraudDetectorAgent fraudDetector = new FraudDetectorAgent(auditLogger);
-    private final ComplianceCheckerAgent complianceChecker = new ComplianceCheckerAgent(auditLogger);
-    private final SettlementProcessorAgent settlementProcessor = new SettlementProcessorAgent(auditLogger);
+    private final Map<String, PipelineAgent> agentsByName;
 
     public Integrator() {
         this(Path.of("shared"), Path.of("sample-transactions.json"));
     }
 
     public Integrator(Path sharedRoot, Path sampleTransactionsFile) {
+        this(sharedRoot, sampleTransactionsFile, PipelineSequence.defaultSequence());
+    }
+
+    public Integrator(Path sharedRoot, Path sampleTransactionsFile, PipelineSequence sequence) {
         this.sharedRoot = sharedRoot;
         this.input = sharedRoot.resolve("input");
         this.processing = sharedRoot.resolve("processing");
         this.output = sharedRoot.resolve("output");
         this.results = sharedRoot.resolve("results");
         this.sampleTransactionsFile = sampleTransactionsFile;
+
+        TransactionValidatorAgent validator = new TransactionValidatorAgent(auditLogger);
+        FraudDetectorAgent fraudDetector = new FraudDetectorAgent(auditLogger);
+        ComplianceCheckerAgent complianceChecker = new ComplianceCheckerAgent(auditLogger);
+        SettlementProcessorAgent settlementProcessor = new SettlementProcessorAgent(auditLogger);
+        this.agentsByName = Map.of(
+                validator.name(), validator,
+                fraudDetector.name(), fraudDetector,
+                complianceChecker.name(), complianceChecker,
+                settlementProcessor.name(), settlementProcessor);
+
+        for (String agentName : sequence.agentNames()) {
+            if (!agentsByName.containsKey(agentName)) {
+                throw new IllegalArgumentException("Unknown pipeline agent '" + agentName
+                        + "'. Known agents: " + agentsByName.keySet());
+            }
+        }
+        this.sequence = sequence;
     }
 
     public static void main(String[] args) {
         try {
-            new Integrator().run();
+            CliArgs cliArgs = CliArgs.parse(args);
+            Integrator integrator = new Integrator(Path.of("shared"), cliArgs.sampleTransactionsFile(), cliArgs.sequence());
+            if (cliArgs.singleStage() != null) {
+                integrator.runStage(cliArgs.singleStage());
+            } else {
+                integrator.run();
+            }
+        } catch (CliArgs.HelpRequested e) {
+            System.out.println(CliArgs.USAGE);
         } catch (RuntimeException e) {
             log.error("Pipeline run failed", e);
             System.exit(1);
         }
     }
 
+    /** Seeds shared/input/ from {@code sampleTransactionsFile}, then runs every stage in {@link #sequence} order. */
     public void run() {
-        bus.ensureDirectories(input, processing, output, results);
-
         List<Transaction> transactions = loadTransactions();
         log.info("Loaded {} transactions from {}", transactions.size(), sampleTransactionsFile);
-
+        bus.ensureDirectories(input, processing, output, results);
         int skipped = enqueueInitialMessages(transactions);
 
-        runStage(validator, input, null);
-        runStage(fraudDetector, output, FraudDetectorAgent.NAME);
-        runStage(complianceChecker, output, ComplianceCheckerAgent.NAME);
-        runStage(settlementProcessor, output, SettlementProcessorAgent.NAME);
+        for (String agentName : sequence.agentNames()) {
+            runStage(agentName);
+        }
 
         Map<String, Long> summary = writeSummary(transactions.size());
         log.info("Pipeline run complete. {} already-settled transactions skipped. Status counts: {}", skipped, summary);
+    }
+
+    /**
+     * Loads {@code sampleTransactionsFile} and writes one initial message per (not yet
+     * terminal) transaction into {@code shared/input/}, targeting {@link PipelineSequence#first()}.
+     * Exposed separately from {@link #run()} so callers can seed once and then drive
+     * {@link #runStage(String)} themselves, one call at a time, in whatever order they choose.
+     */
+    public int seedInput() {
+        List<Transaction> transactions = loadTransactions();
+        log.info("Loaded {} transactions from {}", transactions.size(), sampleTransactionsFile);
+        bus.ensureDirectories(input, processing, output, results);
+        return enqueueInitialMessages(transactions);
+    }
+
+    /**
+     * Runs exactly one named stage over whatever's currently queued for it, and routes
+     * its output per {@link #sequence}. Reads from {@code shared/input/} if {@code agentName}
+     * is the sequence's first stage, otherwise from {@code shared/output/} filtered by
+     * {@code target_agent == agentName}. Can be called on its own, any number of times,
+     * in any order — each call only processes whatever has actually been routed to it,
+     * so calling stages "out of order" relative to a full run is harmless (it just finds
+     * nothing queued yet for a stage nothing has reached).
+     */
+    public void runStage(String agentName) {
+        bus.ensureDirectories(input, processing, output, results);
+
+        PipelineAgent agent = agentsByName.get(agentName);
+        if (agent == null) {
+            throw new IllegalArgumentException("Unknown pipeline agent '" + agentName
+                    + "'. Known agents: " + agentsByName.keySet());
+        }
+
+        Path sourceDir = agentName.equals(sequence.first()) ? input : output;
+        List<PipelineMessage> queued = bus.listByTargetAgent(sourceDir, agentName);
+
+        log.info("Stage [{}]: processing {} message(s) from {}", agentName, queued.size(), sourceDir);
+
+        String nextAgent = sequence.nextAfter(agentName).orElse(null);
+
+        for (PipelineMessage message : queued) {
+            String transactionId = message.data().transactionId();
+            bus.moveRaw(sourceDir, processing, transactionId);
+
+            TransactionRecord updated = agent.process(message.data());
+            boolean terminal = updated.state().status().isTerminal() || nextAgent == null;
+
+            PipelineMessage result = terminal
+                    ? message.terminal(agentName, updated)
+                    : message.routedTo(agentName, nextAgent, updated);
+
+            bus.write(terminal ? results : output, result);
+            bus.delete(processing, transactionId);
+        }
     }
 
     private List<Transaction> loadTransactions() {
@@ -104,37 +189,10 @@ public final class Integrator {
                 continue;
             }
             TransactionRecord record = TransactionRecord.received(tx);
-            PipelineMessage message = PipelineMessage.initial("integrator", TransactionValidatorAgent.NAME, record);
+            PipelineMessage message = PipelineMessage.initial("integrator", sequence.first(), record);
             bus.write(input, message);
         }
         return skipped;
-    }
-
-    /**
-     * Runs one pipeline stage over every queued message in {@code sourceDir} that targets
-     * {@code agent} (or every message, when {@code targetFilter} is null — used for the
-     * first stage, where everything in shared/input/ is already targeted at the validator).
-     */
-    private void runStage(PipelineAgent agent, Path sourceDir, String targetFilter) {
-        List<PipelineMessage> queued = targetFilter == null
-                ? bus.listMessages(sourceDir)
-                : bus.listByTargetAgent(sourceDir, targetFilter);
-
-        log.info("Stage [{}]: processing {} message(s) from {}", agent.name(), queued.size(), sourceDir);
-
-        for (PipelineMessage message : queued) {
-            String transactionId = message.data().transactionId();
-            bus.moveRaw(sourceDir, processing, transactionId);
-
-            PipelineMessage result = agent.process(message);
-
-            if (result.data().state().status().isTerminal()) {
-                bus.write(results, result);
-            } else {
-                bus.write(output, result);
-            }
-            bus.delete(processing, transactionId);
-        }
     }
 
     private Map<String, Long> writeSummary(int totalTransactions) {
@@ -150,6 +208,7 @@ public final class Integrator {
                 OffsetDateTime.now(ZoneOffset.UTC),
                 totalTransactions,
                 outcomes.size(),
+                sequence.agentNames(),
                 countsByStatus,
                 outcomes.stream().map(this::toOutcomeSummary).toList());
 
@@ -170,6 +229,7 @@ public final class Integrator {
             OffsetDateTime generatedAt,
             int totalTransactions,
             int resultsWritten,
+            List<String> agentSequence,
             Map<String, Long> countsByStatus,
             List<TransactionOutcomeSummary> outcomes) {
     }

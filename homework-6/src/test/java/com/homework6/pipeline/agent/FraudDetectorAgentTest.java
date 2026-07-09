@@ -1,7 +1,6 @@
 package com.homework6.pipeline.agent;
 
 import com.homework6.pipeline.audit.AuditLogger;
-import com.homework6.pipeline.model.PipelineMessage;
 import com.homework6.pipeline.model.Transaction;
 import com.homework6.pipeline.model.TransactionRecord;
 import com.homework6.pipeline.model.TransactionStatus;
@@ -25,45 +24,44 @@ class FraudDetectorAgentTest {
                 Map.of("channel", "online", "country", country));
     }
 
-    private PipelineMessage process(Transaction transaction) {
-        PipelineMessage initial = PipelineMessage.initial("transaction_validator", FraudDetectorAgent.NAME,
-                TransactionRecord.received(transaction).withState(TransactionRecord.received(transaction).state().validated()));
-        return agent.process(initial);
+    private TransactionRecord process(Transaction transaction) {
+        TransactionRecord validated = TransactionRecord.received(transaction)
+                .withState(TransactionRecord.received(transaction).state().validated());
+        return agent.process(validated);
     }
 
     @Test
     void process_highValueAloneMeetsFlagThreshold_flagsForReview() {
         Transaction tx = transaction("25000.00", "USD", "2026-03-16T09:15:00Z", "US");
 
-        PipelineMessage result = process(tx);
+        TransactionRecord result = process(tx);
 
-        assertEquals(TransactionStatus.FLAGGED_FOR_REVIEW, result.data().state().status());
-        assertEquals(70, result.data().state().riskScore());
-        assertTrue(result.data().state().riskFactors().contains("high_value"));
-        assertEquals("FRAUD_RISK_THRESHOLD_EXCEEDED", result.data().state().reasonCode());
+        assertEquals(TransactionStatus.FLAGGED_FOR_REVIEW, result.state().status());
+        assertEquals(70, result.state().riskScore());
+        assertTrue(result.state().riskFactors().contains("high_value"));
+        assertEquals("FRAUD_RISK_THRESHOLD_EXCEEDED", result.state().reasonCode());
     }
 
     @Test
     void process_lowValueDuringBusinessHoursDomestic_clearsWithZeroScore() {
         Transaction tx = transaction("1500.00", "USD", "2026-03-16T09:00:00Z", "US");
 
-        PipelineMessage result = process(tx);
+        TransactionRecord result = process(tx);
 
-        assertEquals(TransactionStatus.FRAUD_CLEARED, result.data().state().status());
-        assertEquals(0, result.data().state().riskScore());
-        assertEquals("compliance_checker", result.targetAgent());
+        assertEquals(TransactionStatus.FRAUD_CLEARED, result.state().status());
+        assertEquals(0, result.state().riskScore());
     }
 
     @Test
     void process_unusualTimingAndCrossBorderCombinedBelowThreshold_clearsWithBothFactorsRecorded() {
         Transaction tx = transaction("500.00", "EUR", "2026-03-16T02:47:00Z", "DE");
 
-        PipelineMessage result = process(tx);
+        TransactionRecord result = process(tx);
 
-        assertEquals(TransactionStatus.FRAUD_CLEARED, result.data().state().status());
-        assertEquals(40, result.data().state().riskScore());
-        assertTrue(result.data().state().riskFactors().contains("unusual_timing"));
-        assertTrue(result.data().state().riskFactors().contains("cross_border"));
+        assertEquals(TransactionStatus.FRAUD_CLEARED, result.state().status());
+        assertEquals(40, result.state().riskScore());
+        assertTrue(result.state().riskFactors().contains("unusual_timing"));
+        assertTrue(result.state().riskFactors().contains("cross_border"));
     }
 
     @Test

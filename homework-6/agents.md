@@ -45,8 +45,13 @@ This document configures AI coding agents (Claude Code, GitHub Copilot, Cursor) 
 - `shared/results/` records are themselves part of the audit trail — never delete or mutate a file already written there; if an agent must correct a prior result, it does so by explicit reprocessing logic, not by silent overwrite (see idempotency rule below).
 
 ### Idempotency
-- Every agent must check whether a terminal result already exists for a `transaction_id` in `shared/results/` before acting. If it does, skip and log `SKIPPED_DUPLICATE` — never re-settle or re-reject.
+- Agents have no file-system access (see Pipeline Sequencing below) and therefore cannot check `shared/results/` themselves. Idempotency is the `Integrator`'s responsibility: it checks whether a terminal result already exists for a `transaction_id` before seeding it into `shared/input/`, and skips + logs `SKIPPED_DUPLICATE` if so. Never re-add a duplicate idempotency check inside an agent — it belongs in exactly one place.
 - File writes to any `shared/` subdirectory must be atomic: write to a `.tmp` file in the same directory, then move it into place. A reader must never observe a partially-written JSON file.
+
+### Pipeline Sequencing (Configurability)
+- Agents **must never** decide, hardcode, or hint at what agent runs next. `PipelineAgent.process(TransactionRecord)` takes and returns a `TransactionRecord` only — no message envelope, no routing fields, no knowledge of neighboring stages.
+- The single source of truth for stage order is `PipelineSequence` (an ordered list of agent names), consumed by `Integrator`. Changing the pipeline's order, running a subset of stages, or running one stage at a time (`Integrator.runStage(String)`) must never require touching an agent class — only `PipelineSequence` construction changes.
+- A transaction's fate can differ depending on which stages are configured to run (e.g. skipping `compliance_checker` means a blocked destination account is never caught). That's expected, not a bug — the configured sequence is a first-class decision, and each agent enforces its own rule correctly regardless of position.
 
 ---
 
@@ -54,12 +59,12 @@ This document configures AI coding agents (Claude Code, GitHub Copilot, Cursor) 
 
 ### Naming
 - Package root: `com.homework6.pipeline`.
-- Agent classes: suffix `Agent` (e.g. `TransactionValidatorAgent`), one class per pipeline stage, each implementing the shared `PipelineAgent` interface (`PipelineMessage process(PipelineMessage message)`).
+- Agent classes: suffix `Agent` (e.g. `TransactionValidatorAgent`), one class per pipeline stage, each implementing the shared `PipelineAgent` interface (`TransactionRecord process(TransactionRecord record)`). Agents are pure transforms of transaction state — no file I/O, no routing decisions (see Pipeline Sequencing above).
 - Message/DTO classes: Java records where possible (e.g. `PipelineMessage`, `Transaction`).
 - Enum values: ALL_CAPS (`VALIDATED`, `REJECTED`, `FLAGGED_FOR_REVIEW`, `COMPLIANCE_HOLD`, `SETTLED`).
 
 ### Error Handling
-- Agents throw domain-specific exceptions (e.g. `InvalidTransactionException`) only for conditions that should halt the pipeline run (I/O failure, corrupt message). Ordinary business rejections (bad currency, fraud flag) are **not** exceptions — they are a normal `PipelineMessage` with `status: REJECTED`/`FLAGGED_FOR_REVIEW` and a `reason_code`.
+- Agents throw domain-specific exceptions (e.g. `InvalidTransactionException`) only for conditions that should halt the pipeline run (I/O failure, corrupt message). Ordinary business rejections (bad currency, fraud flag) are **not** exceptions — they are a normal `TransactionRecord` with `status: REJECTED`/`FLAGGED_FOR_REVIEW` and a `reason_code`.
 - Never catch `Exception` broadly in an agent's `process` method — catch the specific checked exceptions IO/Jackson can throw.
 - Never swallow an exception silently; if it isn't rethrown, it must be logged at `ERROR` with the `transaction_id`.
 
