@@ -79,7 +79,7 @@ This document configures AI coding agents (Claude Code, GitHub Copilot, Cursor) 
 
 ## What the Agent Must Not Do
 
-- Do not add a REST API, web server, or Spring dependency — this pipeline is file/CLI-orchestrated per `specification.md`.
+- Do not add a REST API, web server, or Spring dependency **unless implementing `specification-capstone.md` Task 2** — that spec explicitly supersedes this rule and requires Spring Boot. Outside of that scope, this pipeline stays file/CLI-orchestrated per `specification.md`. When Task 2 is implemented, `PipelineExecutor` must stay framework-agnostic (no Spring imports) so the CLI (`Integrator`) and the REST API (`com.homework6.pipeline.api`) share the same core logic without the CLI depending on Spring.
 - Do not use `double`/`float` for any monetary value.
 - Do not log a raw `source_account`/`destination_account` — always route through `PiiMaskingUtil`.
 - Do not hardcode fraud/compliance thresholds inline — use `PipelineConfig`/`ComplianceConfig`.
