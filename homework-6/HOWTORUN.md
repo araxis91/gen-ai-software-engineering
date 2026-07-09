@@ -8,6 +8,17 @@
 - Node.js + `npx` (for the `context7` MCP server)
 - Claude Code, launched with `homework-6/` as the project root, if you want to use the `/write-spec`, `/run-pipeline`, `/validate-transactions` skills or the coverage-gate hook
 
+## Quickest way to see everything work: demo.sh
+
+```bash
+cd homework-6
+./demo.sh
+```
+
+One command, zero manual steps (`specification-capstone.md` Task 3): builds the project, starts the REST API in the background, waits for it to actually be ready (polling, not a blind `sleep`), submits every transaction from `sample-transactions.json` over HTTP, prints a formatted summary table, and always shuts the server down on exit — success, failure, or Ctrl-C. Safe to re-run any time (it clears `shared/` first for a fresh demo each run). Override the port with `PORT=9090 ./demo.sh` if 8080 is taken.
+
+The sections below walk through each piece individually, for when you want more control than the one-shot script gives you.
+
 ## 1. Build the pipeline
 
 ```bash
@@ -139,7 +150,9 @@ cd ..
 
 Inside Claude Code, `/write-spec` regenerates `specification.md` from the mandated template, cross-checking that every edge case in `sample-transactions.json` is covered by a Low-Level Task.
 
-## Quick demo script (all of the above, in order)
+## Quick manual check (CLI + tests only, no HTTP)
+
+For the full one-command demo (including the REST API), use `./demo.sh` — see the top of this document. This shorter sequence is just the CLI path plus the test suite, useful when you don't need the API running:
 
 ```bash
 cd homework-6

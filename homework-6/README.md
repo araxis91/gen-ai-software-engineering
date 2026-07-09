@@ -118,6 +118,14 @@ Two independent entry points into the same project, unaffected by each other:
 
 Both share the same framework-agnostic core — `PipelineExecutor` (advances a transaction through the configured `PipelineSequence`, purely in memory) and `PipelineSummaryWriter` (regenerates `pipeline-summary.json`) have zero Spring dependency, so the CLI never pulls in Spring transitively.
 
+## One-command demo
+
+```bash
+./demo.sh
+```
+
+Builds the project, starts the REST API, waits for it to actually be ready, submits every transaction in `sample-transactions.json` over HTTP, prints a formatted results table, and always shuts the server down cleanly on exit (`specification-capstone.md` Task 3). Zero manual steps. See `HOWTORUN.md` for the full breakdown and manual alternative.
+
 ## Tech stack
 
 | Layer                     | Technology                                                                                                                 |
@@ -136,6 +144,7 @@ Both share the same framework-agnostic core — `PipelineExecutor` (advances a t
 - `specification.md`, `specification-capstone.md`, `agents.md` — the project specs and AI-agent guidelines (Task 1; capstone Tasks 2-3).
 - `src/main/java/com/homework6/pipeline/` — the pipeline itself: `Integrator`, `PipelineExecutor`/`PipelineSummaryWriter` (shared, framework-agnostic core), `PipelineSequence` (configurable stage order), `CliArgs`, `agent/`, `model/`, `messaging/`, `audit/`, `config/`, `util/`, `cli/`, `exception/` (Task 2).
 - `src/main/java/com/homework6/pipeline/api/` — the REST API Gateway: `PipelineApiApplication`, `TransactionController`, `PipelineExecutionService`, `GlobalExceptionHandler`, `PipelineBeansConfig`, `dto/` (capstone Task 2).
+- `demo.sh` — one-command build/start/submit/summarize/teardown demo of the REST API (capstone Task 3).
 - `src/test/java/...` — unit tests per class + `IntegratorTest`/`PipelineApiIntegrationTest` (full-pipeline integration tests) (Task 5).
 - `.claude/commands/` — `write-spec.md`, `run-pipeline.md`, `validate-transactions.md` skills; `.claude/settings.json` + `scripts/coverage-gate.sh` — the coverage-gate hook (Task 3).
 - `mcp/server.py`, `.mcp.json` — the custom FastMCP server (`get_transaction_status`, `list_pipeline_results`, `pipeline://summary`) plus `context7` (Task 4).
