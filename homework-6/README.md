@@ -94,23 +94,49 @@ manual.runStage("compliance_checker");
 manual.runStage("settlement_processor");
 ```
 
+## REST API Gateway
+
+The file-based pipeline above is also reachable over HTTP (`specification-capstone.md` Task 2) — a Spring Boot service that runs a transaction through the same agents **synchronously** and persists the result to the same `shared/results/` files the CLI and MCP server use. All three entry points (CLI, REST API, MCP server) are interchangeable views onto one shared source of truth.
+
+```bash
+mvn spring-boot:run
+# or: java -jar target/banking-pipeline-exec.jar   (built via `mvn package`)
+```
+
+| Method | Path | Behavior |
+|---|---|---|
+| `POST` | `/api/v1/transactions` | Submit one transaction; runs it through the pipeline synchronously and returns the terminal result. Submitting the same `transaction_id` again returns the existing result unchanged (idempotent, `200`). |
+| `GET` | `/api/v1/transactions/{transactionId}` | The result for one transaction (`404` if not yet processed). |
+| `GET` | `/api/v1/transactions` | Every transaction currently in `shared/results/`. |
+| `GET` | `/api/v1/pipeline/summary` | The latest `pipeline-summary.json` content (`404` if nothing has been processed yet). |
+
+Swagger UI: `http://localhost:8080/swagger-ui.html`. OpenAPI JSON: `/v3/api-docs`.
+
+Two independent entry points into the same project, unaffected by each other:
+- `com.homework6.pipeline.Integrator` — the CLI (`java -cp target/classes:... com.homework6.pipeline.Integrator`), packaged as the plain `target/banking-pipeline.jar`.
+- `com.homework6.pipeline.api.PipelineApiApplication` — the REST API, packaged separately as `target/banking-pipeline-exec.jar` (Spring Boot fat jar, `classifier=exec` so it never overwrites the CLI jar).
+
+Both share the same framework-agnostic core — `PipelineExecutor` (advances a transaction through the configured `PipelineSequence`, purely in memory) and `PipelineSummaryWriter` (regenerates `pipeline-summary.json`) have zero Spring dependency, so the CLI never pulls in Spring transitively.
+
 ## Tech stack
 
 | Layer                     | Technology                                                                                                                 |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Pipeline language/runtime | Java 21, Maven 3.9+                                                                                                        |
+| REST API                  | Spring Boot 3.3.x (`spring-boot-starter-web`/`-validation`), springdoc-openapi (Swagger UI)                                |
 | JSON messaging            | Jackson (`jackson-databind` + `jackson-datatype-jsr310`)                                                                   |
 | Logging                   | SLF4J + Logback (structured, ISO-8601 UTC timestamps)                                                                      |
-| Testing                   | JUnit 5, Mockito, JaCoCo (coverage gate + reports)                                                                         |
+| Testing                   | JUnit 5, Mockito, Spring `MockMvc`/`TestRestTemplate`, JaCoCo (coverage gate + reports)                                    |
 | Custom MCP server         | Python 3, [FastMCP](https://gofastmcp.com)                                                                                 |
 | Library docs during dev   | `context7` MCP server                                                                                                      |
 | AI coding agent           | Claude Code — custom skills (`/write-spec`, `/run-pipeline`, `/validate-transactions`) + a `PreToolUse` coverage-gate hook |
 
 ## Repository layout
 
-- `specification.md`, `agents.md` — the project spec and AI-agent guidelines (Task 1).
-- `src/main/java/com/homework6/pipeline/` — the pipeline itself: `Integrator`, `PipelineSequence` (configurable stage order), `CliArgs`, `agent/`, `model/`, `messaging/`, `audit/`, `config/`, `util/`, `cli/` (Task 2).
-- `src/test/java/...` — unit tests per class + `IntegratorTest` (full-pipeline integration test) (Task 5).
+- `specification.md`, `specification-capstone.md`, `agents.md` — the project specs and AI-agent guidelines (Task 1; capstone Tasks 2-3).
+- `src/main/java/com/homework6/pipeline/` — the pipeline itself: `Integrator`, `PipelineExecutor`/`PipelineSummaryWriter` (shared, framework-agnostic core), `PipelineSequence` (configurable stage order), `CliArgs`, `agent/`, `model/`, `messaging/`, `audit/`, `config/`, `util/`, `cli/`, `exception/` (Task 2).
+- `src/main/java/com/homework6/pipeline/api/` — the REST API Gateway: `PipelineApiApplication`, `TransactionController`, `PipelineExecutionService`, `GlobalExceptionHandler`, `PipelineBeansConfig`, `dto/` (capstone Task 2).
+- `src/test/java/...` — unit tests per class + `IntegratorTest`/`PipelineApiIntegrationTest` (full-pipeline integration tests) (Task 5).
 - `.claude/commands/` — `write-spec.md`, `run-pipeline.md`, `validate-transactions.md` skills; `.claude/settings.json` + `scripts/coverage-gate.sh` — the coverage-gate hook (Task 3).
 - `mcp/server.py`, `.mcp.json` — the custom FastMCP server (`get_transaction_status`, `list_pipeline_results`, `pipeline://summary`) plus `context7` (Task 4).
 - `research-notes.md` — documented context7 queries used while building the pipeline and MCP server.

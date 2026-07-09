@@ -28,24 +28,26 @@
 
 - **New dependencies** (added to `homework-6/pom.xml`): `spring-boot-starter-web`, `spring-boot-starter-validation`, `springdoc-openapi-starter-webmvc-ui`, `spring-boot-maven-plugin`. Pin versions via a `spring-boot-dependencies` BOM import (`<dependencyManagement>`) rather than hand-picking each transitive version.
 - **This supersedes one line in `agents.md`**: the flat "Do not add a REST API, web server, or Spring dependency" rule under "What the Agent Must Not Do" must be updated once this spec exists — `agents.md`'s own Tech Stack Assumptions section already carves out the exception ("...unless the spec is updated to require an API surface"), so this document is that update. Do not treat the old blanket rule as still binding once this file is present.
-- **New package**: `com.homework6.pipeline.api` — `PipelineApiApplication` (Spring Boot `@SpringBootApplication` entry point; a *second*, independent `main`, alongside `Integrator`'s existing CLI entry point — both remain valid ways to run the project), `TransactionController`, `dto/` (request/response records), `GlobalExceptionHandler`.
-- **`PipelineExecutor`** (new class, framework-agnostic, lives in the root `com.homework6.pipeline` package — not under `api/` — so it has zero Spring dependency and stays independently unit-testable): extracts the "advance a single `TransactionRecord` through a `PipelineSequence`" loop out of `Integrator`, operating **purely in memory** (no `shared/processing`/`shared/output` file shuffling — that file choreography exists for the batch/file-queue CLI mode; a synchronous HTTP request processes one transaction start-to-finish within one request-response cycle). It must reuse the *same* agent instances / `PipelineSequence` construction logic `Integrator` already has — do not duplicate the agent registry or duplicate `PipelineSequence` validation in two places. Refactor `Integrator` to delegate its own per-stage advancement to `PipelineExecutor` internally if that removes duplication; do not just copy-paste the loop.
+- **New package**: `com.homework6.pipeline.api` — `PipelineApiApplication` (Spring Boot `@SpringBootApplication` entry point; a _second_, independent `main`, alongside `Integrator`'s existing CLI entry point — both remain valid ways to run the project), `TransactionController`, `dto/` (request/response records), `GlobalExceptionHandler`.
+- **`PipelineExecutor`** (new class, framework-agnostic, lives in the root `com.homework6.pipeline` package — not under `api/` — so it has zero Spring dependency and stays independently unit-testable): extracts the "advance a single `TransactionRecord` through a `PipelineSequence`" loop out of `Integrator`, operating **purely in memory** (no `shared/processing`/`shared/output` file shuffling — that file choreography exists for the batch/file-queue CLI mode; a synchronous HTTP request processes one transaction start-to-finish within one request-response cycle). It must reuse the _same_ agent instances / `PipelineSequence` construction logic `Integrator` already has — do not duplicate the agent registry or duplicate `PipelineSequence` validation in two places. Refactor `Integrator` to delegate its own per-stage advancement to `PipelineExecutor` internally if that removes duplication; do not just copy-paste the loop.
 - **Idempotency**: `TransactionController` (or `PipelineExecutor`) must check `shared/results/{transaction_id}.json` via `FileMessageBus` before calling `PipelineExecutor` — if a terminal result already exists, return it as-is (`200`) without re-invoking any agent. This mirrors `Integrator.seedInput()`'s existing skip-and-log-`SKIPPED_DUPLICATE` behavior; reuse `AuditLogger` for the same log line, don't invent a second idempotency mechanism.
 - **DTOs**: request/response records under `com.homework6.pipeline.api.dto`, separate from the internal `Transaction`/`TransactionRecord`/`ProcessingState` model — never return a JPA-style internal object directly from a controller. Static factory methods (`TransactionResultResponse.from(TransactionRecord)`) rather than exposing setters.
-- **Validation**: Jakarta Bean Validation (`@NotBlank`, `@NotNull`) on `SubmitTransactionRequest` covers only *structural* completeness (a field is present). Business rules (amount must be positive, currency must be valid ISO 4217) stay inside `TransactionValidatorAgent` — do not duplicate them as bean-validation annotations, or the two can drift out of sync.
+- **Validation**: Jakarta Bean Validation (`@NotBlank`, `@NotNull`) on `SubmitTransactionRequest` covers only _structural_ completeness (a field is present). Business rules (amount must be positive, currency must be valid ISO 4217) stay inside `TransactionValidatorAgent` — do not duplicate them as bean-validation annotations, or the two can drift out of sync.
 - **Error handling**: a single `@RestControllerAdvice` `GlobalExceptionHandler` — bean-validation failures and malformed JSON → `400`; unknown `transactionId` on the `GET` endpoint → `404`; anything else unexpected → `500` with a generic body (never leak a stack trace or internal class name to the client). Every error response uses one consistent `ErrorResponse` shape (`code`, `message`).
-- **PII / logging / audit / money rules** from `agents.md` are unchanged and fully apply to this new entry point — the API is a new way *into* the same agents, not a bypass of any hard rule (masked account numbers in logs, `BigDecimal` for amounts, structured audit log per agent action, etc.).
+- **PII / logging / audit / money rules** from `agents.md` are unchanged and fully apply to this new entry point — the API is a new way _into_ the same agents, not a bypass of any hard rule (masked account numbers in logs, `BigDecimal` for amounts, structured audit log per agent action, etc.).
 - **Swagger UI**: enabled by default for local/dev use (no `prod` profile exists yet in this project — if one is introduced later, disable Swagger there, per the project's existing convention for Java REST services).
 - **Port/config**: default Spring Boot port `8080`, overridable via `server.port` in `application.yml` or `SERVER_PORT` env var — `demo.sh` (Task 3) must not hardcode a port it can't override.
 
 ### Context
 
 #### Beginning context
+
 - The completed homework-6 pipeline as of the "configurable pipeline" work: `Integrator`, `PipelineSequence`, `CliArgs`, 4 `PipelineAgent` implementations (plus the Task 1 fifth agent, assumed present), `FileMessageBus`, `AuditLogger`, and `shared/{input,processing,output,results}`.
 - `agents.md`'s current blanket "no REST API" rule, which this spec formally supersedes.
 - No `com.homework6.pipeline.api` package yet; `pom.xml` has no web/Spring dependencies yet.
 
 #### Ending context
+
 - A runnable Spring Boot application (`mvn spring-boot:run`, or `java -jar target/banking-pipeline.jar` if packaged with the Spring Boot plugin) exposing the four endpoints above.
 - `shared/results/` remains the single shared source of truth read/written by all three entry points into this project: the CLI (`Integrator`), the REST API, and the MCP server (`mcp/server.py`) — a transaction submitted via `curl` and one submitted via `Integrator.run()` are indistinguishable once terminal.
 - Swagger UI reachable at `/swagger-ui.html` (or springdoc's default path) for manual testing.
@@ -123,10 +125,12 @@ Details: No endpoints beyond the four specified should appear in the OpenAPI spe
 ### Context
 
 #### Beginning context
+
 - The REST API from Task 2, buildable via `mvn package` and runnable via the packaged jar or `spring-boot:run`, listening on a configurable port (default 8080).
 - `sample-transactions.json` at the project root, unchanged.
 
 #### Ending context
+
 - `homework-6/demo.sh`, executable, with no other manual setup required beyond having `mvn`/`curl`/`jq`/a JDK installed.
 - Running `cd homework-6 && ./demo.sh` end-to-end builds, starts, exercises, summarizes, and tears down the API in one command.
 

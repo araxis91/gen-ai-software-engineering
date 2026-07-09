@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: Banking Pipeline API
+
+server:
+  port: ${SERVER_PORT:8080}
+
+pipeline:
+  # Base shared/ directory this API reads/writes -- the same one the CLI (Integrator)
+  # and the MCP server (mcp/server.py) use, so all three entry points share results.
+  shared-dir: ${PIPELINE_SHARED_DIR:shared}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs

@@ -17,9 +17,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +45,8 @@ public final class Integrator {
     private final FileMessageBus bus = new FileMessageBus();
     private final AuditLogger auditLogger = new AuditLogger();
     private final Map<String, PipelineAgent> agentsByName;
+    private final PipelineExecutor executor = new PipelineExecutor();
+    private final PipelineSummaryWriter summaryWriter = new PipelineSummaryWriter(bus);
 
     public Integrator() {
         this(Path.of("shared"), Path.of("sample-transactions.json"));
@@ -112,7 +111,7 @@ public final class Integrator {
             runStage(agentName);
         }
 
-        Map<String, Long> summary = writeSummary(transactions.size());
+        Map<String, Long> summary = summaryWriter.writeSummary(results, transactions.size(), sequence.agentNames());
         log.info("Pipeline run complete. {} already-settled transactions skipped. Status counts: {}", skipped, summary);
     }
 
@@ -141,8 +140,7 @@ public final class Integrator {
     public void runStage(String agentName) {
         bus.ensureDirectories(input, processing, output, results);
 
-        PipelineAgent agent = agentsByName.get(agentName);
-        if (agent == null) {
+        if (!agentsByName.containsKey(agentName)) {
             throw new IllegalArgumentException("Unknown pipeline agent '" + agentName
                     + "'. Known agents: " + agentsByName.keySet());
         }
@@ -158,7 +156,7 @@ public final class Integrator {
             String transactionId = message.data().transactionId();
             bus.moveRaw(sourceDir, processing, transactionId);
 
-            TransactionRecord updated = agent.process(message.data());
+            TransactionRecord updated = executor.runStage(message.data(), agentName, agentsByName);
             boolean terminal = updated.state().status().isTerminal() || nextAgent == null;
 
             PipelineMessage result = terminal
@@ -195,45 +193,4 @@ public final class Integrator {
         return skipped;
     }
 
-    private Map<String, Long> writeSummary(int totalTransactions) {
-        List<PipelineMessage> outcomes = bus.listMessages(results);
-
-        Map<String, Long> countsByStatus = new LinkedHashMap<>();
-        for (PipelineMessage outcome : outcomes) {
-            String status = outcome.data().state().status().name();
-            countsByStatus.merge(status, 1L, Long::sum);
-        }
-
-        PipelineSummary summary = new PipelineSummary(
-                OffsetDateTime.now(ZoneOffset.UTC),
-                totalTransactions,
-                outcomes.size(),
-                sequence.agentNames(),
-                countsByStatus,
-                outcomes.stream().map(this::toOutcomeSummary).toList());
-
-        bus.writeJson(results.resolve("pipeline-summary.json"), summary);
-        return countsByStatus;
-    }
-
-    private TransactionOutcomeSummary toOutcomeSummary(PipelineMessage message) {
-        var record = message.data();
-        return new TransactionOutcomeSummary(
-                record.transactionId(),
-                record.state().status().name(),
-                record.state().reasonCode(),
-                record.state().riskScore());
-    }
-
-    private record PipelineSummary(
-            OffsetDateTime generatedAt,
-            int totalTransactions,
-            int resultsWritten,
-            List<String> agentSequence,
-            Map<String, Long> countsByStatus,
-            List<TransactionOutcomeSummary> outcomes) {
-    }
-
-    private record TransactionOutcomeSummary(String transactionId, String status, String reasonCode, Integer riskScore) {
-    }
 }

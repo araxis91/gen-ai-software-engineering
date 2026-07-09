@@ -15,46 +15,84 @@
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jackson.version>2.17.2</jackson.version>
-    <slf4j.version>2.0.13</slf4j.version>
-    <logback.version>1.5.6</logback.version>
-    <junit.version>5.10.2</junit.version>
-    <mockito.version>5.12.0</mockito.version>
     <jacoco.version>0.8.15</jacoco.version>
+    <spring-boot.version>3.3.4</spring-boot.version>
+    <springdoc.version>2.6.0</springdoc.version>
+    <!-- Overrides the Spring Boot BOM's managed Mockito (bundled Byte Buddy doesn't
+         support the local JDK's class file version yet); same class of issue as the
+         JaCoCo bump in Task 5. -->
+    <mockito.version>5.23.0</mockito.version>
+    <byte-buddy.version>1.18.11</byte-buddy.version>
     <main.class>com.homework6.pipeline.Integrator</main.class>
+    <api.main.class>com.homework6.pipeline.api.PipelineApiApplication</api.main.class>
   </properties>
 
+  <!--
+    BOM import only (no parent spring-boot-starter-parent) so our existing build config
+    (JaCoCo coverage gate, compiler/surefire/jar plugins) stays exactly as it was for the
+    CLI, and only dependency versions are pinned by Spring Boot; see
+    specification-capstone.md Task 2 Implementation Notes.
+  -->
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
   <dependencies>
-    <!-- JSON -->
+    <!-- JSON (version managed by the Spring Boot BOM above) -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>${jackson.version}</version>
     </dependency>
 
-    <!-- Logging -->
+    <!-- Logging (version managed by the Spring Boot BOM above) -->
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
+    </dependency>
+
+    <!-- REST API (Task 2 / specification-capstone.md) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc.version}</version>
     </dependency>
 
     <!-- Testing -->
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <version>${junit.version}</version>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      Explicit overrides of the transitive Mockito version spring-boot-starter-test
+      brings in: since we import spring-boot-dependencies as a BOM (not as parent),
+      the ${mockito.version} property above never reaches the BOM's own already-baked-in
+      version numbers; only a direct dependency declaration like this actually wins.
+    -->
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
@@ -67,15 +105,35 @@
       <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
+    <!-- byte-buddy is transitive (via mockito-core), so the BOM's pinned version still
+         wins over Mockito's own preferred version unless declared directly here too. -->
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy-agent</artifactId>
+      <version>${byte-buddy.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <finalName>banking-pipeline</finalName>
     <plugins>
+      <!-- -parameters: keeps method parameter names at runtime, so Spring MVC can bind
+           @PathVariable/@RequestParam by name via reflection without needing an explicit
+           name on every annotation. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
+        <configuration>
+          <parameters>true</parameters>
+        </configuration>
       </plugin>
 
       <plugin>
@@ -84,6 +142,7 @@
         <version>3.2.5</version>
       </plugin>
 
+      <!-- Produces target/banking-pipeline.jar with Integrator as the CLI entry point (unchanged). -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
@@ -95,6 +154,29 @@
             </manifest>
           </archive>
         </configuration>
+      </plugin>
+
+      <!--
+        Produces a SEPARATE executable fat jar, target/banking-pipeline-exec.jar (classifier
+        "exec"), for the REST API; it must not overwrite the plain CLI jar above. Both
+        Integrator.main (via classpath, as before) and PipelineApiApplication.main (via this
+        jar, or `mvn spring-boot:run`) stay independently runnable.
+      -->
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <configuration>
+          <mainClass>${api.main.class}</mainClass>
+          <classifier>exec</classifier>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
 
       <!-- Coverage gate: `mvn verify` fails below 80% line coverage (see research-notes.md query 2) -->
