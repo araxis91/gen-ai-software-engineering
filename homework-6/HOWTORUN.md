@@ -19,6 +19,10 @@ One command, zero manual steps (`specification-capstone.md` Task 3): builds the 
 
 The sections below walk through each piece individually, for when you want more control than the one-shot script gives you.
 
+## Project presentation
+
+`docs/presentation.html` is a self-contained visual walkthrough of how the pipeline works — the four agents, the configurable sequence, the three entry points, and the demo/testing story. Open it directly in a browser (`open docs/presentation.html`), or view the hosted version: https://claude.ai/code/artifact/f73f30e0-4726-4c2e-85c1-7f42bbb9c7cb
+
 ## 1. Build the pipeline
 
 ```bash
