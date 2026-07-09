@@ -32,3 +32,14 @@ Queries made via the `context7` MCP server while building the Java multi-agent p
     </limits>
   </rule>
   ```
+
+## Query 3: FastMCP — static-URI resource returning plain text (Task 4 custom server)
+
+- **Search**: "Defining a resource with a static URI (no template parameters) using the @mcp.resource decorator, and returning plain text"
+- **context7 library ID**: `/prefecthq/fastmcp`
+- **Key insight applied**: confirmed the idiomatic pattern for a non-templated resource is `@mcp.resource("scheme://path")` on a function returning a plain `str` (FastMCP wraps it in `ResourceContent` automatically — no need to construct a `ResourceResult` manually for the simple text case). Applied directly in `mcp/server.py`'s `pipeline_summary_resource()`, which registers `pipeline://summary` and returns the raw contents of `shared/results/pipeline-summary.json` (or a "no run yet" message) as text, matching the doc's `data://config` example shape but reading from disk instead of an in-memory dict.
+  ```python
+  @mcp.resource("pipeline://summary")
+  def pipeline_summary_resource() -> str:
+      return SUMMARY_FILE.read_text(encoding="utf-8")
+  ```

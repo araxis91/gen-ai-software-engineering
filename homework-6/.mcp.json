@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {}
+    },
+    "pipeline-status": {
+      "type": "stdio",
+      "command": "/Users/dimachernega/Projects/Python/AI Courses/homework/gen-ai-software-engineering/homework-6/mcp/.venv/bin/python",
+      "args": [
+        "/Users/dimachernega/Projects/Python/AI Courses/homework/gen-ai-software-engineering/homework-6/mcp/server.py"
+      ],
+      "env": {}
+    }
+  }
+}
