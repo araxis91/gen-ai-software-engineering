@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/coverage-gate.sh\"",
+            "timeout": 120,
+            "statusMessage": "Checking JaCoCo coverage gate before git push..."
+          }
+        ]
+      }
+    ]
+  }
+}
